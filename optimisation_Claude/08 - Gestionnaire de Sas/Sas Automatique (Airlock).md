@@ -144,9 +144,9 @@ Extérieure (espace) : VERROUILLÉE
 
 ## 6. Optimisations et corrections par rapport à l'original
 
-Colonne « Déjà dans `../../.olde/Script_Airlock_Optimise.cs` » : **Oui** = correction reprise de la première optimisation ; **Non** = nouveauté de cette version.
+Colonne « Déjà dans `../../.old` » : **Oui** = correction reprise de la première optimisation ; **Non** = nouveauté de cette version.
 
-| Problème d'origine | Conséquence en jeu | Correction | Déjà dans `../../.olde/Script_Airlock_Optimise.cs` |
+| Problème d'origine | Conséquence en jeu | Correction | Déjà dans `../../.old` |
 |---|---|---|---|
 | `GetBlocks` de **toute** la grille au scan | Scan lent sur une grosse base | `GetBlocksOfType` avec filtre (balise + construction) à la source | Oui |
 | Pas de filtre de construction | Pilote les sas d'un vaisseau amarré | `SEULEMENT_CETTE_CONSTRUCTION` / `IsSameConstructAs(Me)` | Oui |
