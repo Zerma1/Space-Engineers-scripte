@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Zerma1 - https://github.com/Zerma1/Space-Engineers-scripte
+// Licence : PolyForm Noncommercial 1.0.0 - https://polyformproject.org/licenses/noncommercial/1.0.0
+// Usage et partage gratuits autorisés, vente interdite. / Free use and sharing allowed, selling prohibited.
 // ==============================================================================
 // FERMETURE AUTOMATIQUE DES PORTES - VERSION OPTIMISÉE (FermeturePortes.cs)
 // ------------------------------------------------------------------------------
