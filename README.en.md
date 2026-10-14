@@ -1,6 +1,6 @@
 # Space Engineers - Scripts
 
-🇫🇷 [Version française](README.md)
+🇫🇷 [Version française](README.fr.md)
 
 Scripts for Space Engineers programmable blocks.
 
