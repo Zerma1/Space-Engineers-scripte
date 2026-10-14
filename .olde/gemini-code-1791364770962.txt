@@ -1,0 +1,8 @@
+[Ecran]
+Mode=Fixe
+Page=1
+TotalPages=1
+Categories=ore, ingot
+Exclusions=Stone
+AfficherGaz=false
+AfficherEnergie=false

@@ -1,0 +1,6 @@
+[Ecran]
+Mode=Rotatif
+Categories=
+Exclusions=
+AfficherGaz=true
+AfficherEnergie=true
