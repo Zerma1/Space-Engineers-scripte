@@ -5,13 +5,99 @@ script: CentraleAlarmes.cs
 # Centrale d'Alarmes
 
 > [!summary] Résumé
-> Un bloc programmable unique pilote **tous** les gyrophares de la base (groupe `ALARMES`) à partir du [[Bus d'Alarmes]]. Quand plusieurs alarmes sont actives, les gyrophares prennent la couleur de la **plus grave** (criticité `critique` > `majeur` > `normal` > `mineur`). Des écrans affichent la liste des alarmes (`[alarme-line]`) ou leur nombre par criticité en cases colorées, lisibles même sur un **corner LCD** (`[alarme-quant]`). Pour ajouter une alarme, il suffit d'ajouter des lignes dans `SERVEUR_ALARMES`, sans modifier ce script.
+> Un bloc programmable unique pilote **tous** les gyrophares de la base (groupe `ALARMES`) à partir du [[Bus d'Alarmes]]. Les gyrophares prennent la couleur du **niveau le plus grave** parmi les alarmes actives : Critique (cramoisi) > Majeur (rouge) > Normal (orange) > Mineur (cyan). Les écrans `[alarme-line]` affichent la liste numérotée des alarmes, et les écrans `[alarme-quant]` (corner LCD compris) leur nombre par niveau, en cases colorées. Pour ajouter une alarme, il suffit d'un script qui publie dans le bus, ou d'un bouton qui lance `on <Source> <niveau>` : ce script n'est pas modifié.
 
 Retour au [[00 - Sommaire]].
 
 ---
 
-## 1. Prérequis en jeu
+## 1. Comment ça marche, en bref
+
+Trois rôles bien séparés :
+
+| Qui | Rôle |
+|---|---|
+| **Scripts d'alarme** ([[Controle des Avaries]], [[Surveillance Carburant Uranium]], futurs scripts) | détectent un problème et écrivent `true` / `false` dans le bus, avec leur criticité. Ils ne touchent plus aux gyrophares. |
+| **`SERVEUR_ALARMES`** | bloc **passif** : son Custom Data sert de tableau commun (états, criticités, couleurs des niveaux). Voir [[Bus d'Alarmes]]. |
+| **Centrale d'Alarmes** (ce script) | lit le tableau ~6 fois par seconde et pilote tout : gyrophares, écrans de liste, corner LCD. |
+
+```mermaid
+flowchart LR
+    A["Script Avaries<br/>(critique)"] -->|"Avaries=true"| S[("SERVEUR_ALARMES<br/>Custom Data")]
+    C["Script Énergie<br/>(5 alarmes)"] -->|"Batteries=true"| S
+    B["Bouton / capteur<br/>on Intrusion majeur"] --> P
+    P["Centrale d'Alarmes"] -->|"Intrusion=true"| S
+    S -->|"lecture si changé"| P
+    P --> G["Gyrophares (groupe ALARMES)<br/>couleur du niveau le plus grave"]
+    P --> L["Écrans [alarme-line]<br/>liste numérotée"]
+    P --> Q["Corner LCD [alarme-quant]<br/>nombre par niveau"]
+```
+
+### La criticité est la priorité
+
+- **4 niveaux**, du plus grave au moins grave : **Critique**, **Majeur**, **Normal**, **Mineur**. Plusieurs alarmes peuvent avoir le même niveau.
+- **La couleur des gyrophares est celle du niveau le plus grave** parmi les alarmes actives. Deux alarmes « Majeur » donnent le même rouge.
+- **Dans la liste**, les alarmes sont rangées par niveau, puis, à niveau égal, par **ordre d'arrivée** (la plus ancienne d'abord). Le numéro affiché devant chaque alarme est sa priorité.
+- Une alarme qui s'éteint puis se rallume repasse **derrière** les alarmes déjà présentes de son niveau.
+- Un script peut joindre un **détail** à son alarme (`[Detail]` du bus) : il s'affiche après le nom, par exemple `1. [MAJEUR] Energie : Carburant + Uranium` (voir [[Surveillance Carburant Uranium]], dont l'alarme `Energie` monte en criticité quand plusieurs ressources manquent).
+
+## 2. Exemple de scénario
+
+Dix alarmes arrivent l'une après l'autre (les noms sont des exemples : `Avaries` et `Batteries` viennent des scripts, les autres de boutons, capteurs ou futurs scripts) :
+
+| Ordre d'arrivée | Alarme | Criticité | Priorité affichée |
+|---|---|---|---|
+| 1 | O2 bas | Mineur | 6 |
+| 2 | Batteries | Majeur | 2 |
+| 3 | Sas ouvert | Mineur | 7 |
+| 4 | Porte hangar | Normal | 4 |
+| 5 | Plaques d'acier | Normal | 5 |
+| 6 | Intrusion | Majeur | 3 |
+| 7 | Antenne coupée | Mineur | 8 |
+| 8 | Fer bas | Mineur | 9 |
+| 9 | Soute pleine | Mineur | 10 |
+| 10 | Avaries | Critique | 1 |
+
+```mermaid
+flowchart LR
+    T1["1 à 9 : alarmes Mineur, Majeur, Normal<br/>gyrophares ROUGES (Majeur)"] --> T2["10 : Avaries (Critique)<br/>gyrophares CRAMOISI"]
+    T2 --> T3["ACK sur le script Avaries<br/>gyrophares de nouveau ROUGES"]
+    T3 --> T4["Batteries rechargées, Intrusion réglée<br/>gyrophares ORANGE (Normal)"]
+```
+
+**Après la 10ᵉ alarme**, les gyrophares sont **cramoisi**, et les écrans affichent :
+
+Écran `[alarme-line]` :
+
+```
+=== ALARMES ===
+Actives : 10 / 10
+
+1. [CRITIQUE] Avaries
+2. [MAJEUR] Batteries
+3. [MAJEUR] Intrusion
+4. [NORMAL] Porte hangar
+5. [NORMAL] Plaques d'acier
+6. [MINEUR] O2 bas
+7. [MINEUR] Sas ouvert
+8. [MINEUR] Antenne coupée
+9. [MINEUR] Fer bas
+10. [MINEUR] Soute pleine
+```
+
+Corner LCD `[alarme-quant]` (une case par niveau, dans sa couleur) :
+
+```
+[   1    ] [   2    ] [   2    ] [   5    ]
+ Critique    Majeur     Normal     Mineur
+```
+
+**Ensuite** :
+- `ACK` sur le script d'avaries : `Avaries` repasse à `false`. Le niveau le plus grave devient Majeur : les gyrophares passent au **rouge**, et `Batteries` prend la priorité 1.
+- Les batteries se rechargent et l'intrusion est réglée (`off Intrusion`) : il ne reste que des alarmes Normal et Mineur, les gyrophares passent à l'**orange**.
+- `O2 bas` s'éteint puis se rallume : elle repasse **derrière** `Soute pleine`, en dernière position des Mineur.
+
+## 3. Prérequis en jeu
 
 | Élément | Nom / configuration | Obligatoire ? |
 |---|---|---|
@@ -19,20 +105,20 @@ Retour au [[00 - Sommaire]].
 | Serveur d'alarmes | bloc nommé `SERVEUR_ALARMES`, voir [[Bus d'Alarmes]] | **oui** (sans lui, aucune alarme n'est connue) |
 | Groupe d'alarme | groupe nommé **exactement** `ALARMES` (gyrophares, lumières, blocs sonores...) | non (Echo le signale) |
 | Écran liste | nom du bloc contenant `[alarme-line]` | non |
-| Écran compteurs | nom du bloc contenant `[alarme-quant]` | non |
+| Écran compteurs | nom du bloc contenant `[alarme-quant]` (idéal pour un corner LCD) | non |
 | Scripts sources | [[Controle des Avaries]], [[Surveillance Carburant Uranium]], ou tout script qui publie dans le bus | non (les commandes `on` / `off` suffisent pour une alarme sans script) |
 
-## 2. Installation
+## 4. Installation
 
 1. Créer le bloc `SERVEUR_ALARMES` et coller le contenu de `SERVEUR_ALARMES.ini` dans son Custom Data (voir [[Bus d'Alarmes]]).
-2. Construire un **Bloc Programmable**, coller le code de la section [[#10. Code complet]], cliquer sur **« Vérifier le code »** puis **« OK »**.
+2. Construire un **Bloc Programmable**, coller le code de la section [[#11. Code complet]], cliquer sur **« Vérifier le code »** puis **« OK »**.
 3. Sélectionner tous les gyrophares, lumières et blocs sonores d'alarme et créer le groupe `ALARMES`.
-4. **Retirer ces blocs des groupes `ALARMES_CRITIQUES` et `ALARMES_URANIUM`** (ou supprimer ces groupes) : les scripts sources ne doivent plus les piloter (voir la section 8).
-5. Facultatif : renommer un écran en ajoutant `[alarme-line]` ou `[alarme-quant]` à son nom (ex. `LCD Pont [alarme-line]`).
+4. **Retirer ces blocs des groupes `ALARMES_CRITIQUES` et `ALARMES_URANIUM`** (ou supprimer ces groupes) : les scripts sources ne doivent plus les piloter (voir la section 9).
+5. Facultatif : ajouter `[alarme-line]` ou `[alarme-quant]` au nom d'un écran (ex. `LCD Pont [alarme-line]`, `Corner Sas [alarme-quant]`).
 
-## 3. Configuration
+## 5. Configuration
 
-### 3.1 Constantes (en tête du script)
+### 5.1 Constantes (en tête du script)
 
 | Constante | Défaut | Rôle |
 |---|---|---|
@@ -41,30 +127,20 @@ Retour au [[00 - Sommaire]].
 | `BALISE_LISTE` / `BALISE_QUANTITE` | `"[alarme-line"` / `"[alarme-quant"` | balises des noms d'écrans (sans le `]` final) |
 | `INTERVALLE_RESCAN_SECONDES` | `10` | relecture automatique du groupe et des écrans |
 | `MAX_LIGNES_LISTE` | `15` | alarmes listées au maximum (« ... et N autres » ensuite) |
-| `COLORER_TEXTE_ECRANS` | `true` | le texte des écrans prend la couleur de l'alarme dominante (blanc au repos) |
-| `COULEUR_PAR_DEFAUT` | orange `255,128,0` | couleur d'une source sans ligne `[Couleurs]` valide |
-| `COULEURS_CRITICITE` | cramoisi `220,20,60`, rouge `255,0,0`, orange `255,140,0`, cyan `0,255,255` | couleur des cases Critique, Majeur, Normal, Mineur |
-| `ATTENUATION_CASE_VIDE` | `0.18` | luminosité d'une case à 0 alarme (0 = noire) |
+| `COLORER_TEXTE_ECRANS` | `true` | le texte des écrans `[alarme-line]` prend la couleur du niveau le plus grave (blanc au repos) |
+| `COULEURS_CRITICITE` | cramoisi `220,20,60`, rouge `255,0,0`, orange `255,140,0`, cyan `0,255,255` | couleurs par défaut des niveaux, si `[Couleurs]` du bus ne les redéfinit pas |
+| `ATTENUATION_CASE_VIDE` | `0.18` | luminosité d'une case `[alarme-quant]` à 0 alarme (0 = noire) |
 
-### 3.2 Ajouter une alarme
+Les couleurs se changent de préférence **dans le bus** (`[Couleurs] Critique=R,G,B`...) : la Centrale et les scripts sources les lisent tous.
 
-Dans le Custom Data de `SERVEUR_ALARMES` :
+### 5.2 Ajouter une alarme
 
-```ini
-[Couleurs]
-Intrusion=255,0,255
+- **Avec un script** : il copie la classe `BusAlarmes` telle quelle, appelle `Publier(source, besoin, niveau, détail)` pour chacune de ses alarmes, puis `Terminer()`. `[Etat]`, `[Criticite]` et `[Detail]` sont écrits automatiquement. Voir [[Bus d'Alarmes]].
+- **Sans script** : un bouton, un capteur ou une minuterie lance la Centrale avec l'argument `on Intrusion majeur`, puis `off Intrusion`. Le niveau est facultatif : sans lui, la ligne `[Criticite]` existante est gardée (ou `normal` si elle n'existe pas).
 
-[Criticite]
-Intrusion=majeur
-```
+Pour changer le niveau d'une alarme, modifiez sa ligne dans `[Criticite]` : `critique`, `majeur`, `normal` ou `mineur` (les anciens mots `importante`, `normale` et `basse` sont toujours compris).
 
-Ensuite, deux possibilités :
-- **un script** publie `[Etat] Intrusion=true/false` (classe `BusAlarmes` copiée telle quelle, voir [[Bus d'Alarmes]]) ;
-- **sans script** : un bouton, un capteur ou une minuterie lance la Centrale avec l'argument `on Intrusion` (puis `off Intrusion`).
-
-La couleur des gyrophares se choisit dans cet ordre : la criticité la plus haute, puis l'ordre de `[Config] Priorite`, puis l'ordre des clés de `[Etat]`. Une source sans ligne `[Criticite]` est `normal`. Les niveaux sont `critique`, `majeur`, `normal` et `mineur` ; les anciens mots `importante`, `normale` et `basse` sont toujours acceptés.
-
-### 3.3 Filtre par gyrophare (optionnel)
+### 5.3 Filtre par gyrophare (optionnel)
 
 Un bloc du groupe `ALARMES` peut ne réagir qu'à certaines alarmes. Dans **son** Custom Data :
 
@@ -73,14 +149,14 @@ Un bloc du groupe `ALARMES` peut ne réagir qu'à certaines alarmes. Dans **son*
 Sources=Carburant
 ```
 
-Exemple : les lumières de la salle des réacteurs ne s'allument que pour le carburant, avec la couleur du carburant même si une avarie est en cours. Sans section `[Alarme]`, le bloc réagit à toutes les alarmes.
+Exemple : les lumières de la salle des réacteurs ne s'allument que pour le carburant, dans la couleur du niveau du carburant, même si une avarie est en cours. Sans section `[Alarme]`, le bloc réagit à toutes les alarmes.
 
-### 3.4 Écrans
+### 5.4 Écrans
 
 | Balise dans le nom | Affichage |
 |---|---|
-| `[alarme-line]` | nombre d'alarmes actives, puis la liste triée par gravité : `[CRITIQUE] Avaries` |
-| `[alarme-quant]` | 4 cases colorées avec le nombre d'alarmes par criticité : Critique (cramoisi), Majeur (rouge), Normal (orange), Mineur (cyan) |
+| `[alarme-line]` | nombre d'alarmes actives, puis la liste numérotée par priorité, avec le détail éventuel : `1. [CRITIQUE] Avaries`, `2. [MAJEUR] Energie : Carburant + Uranium` |
+| `[alarme-quant]` | 4 cases colorées avec le nombre d'alarmes par niveau : Critique (cramoisi), Majeur (rouge), Normal (orange), Mineur (cyan) |
 | `[alarme-line:1]`, `[alarme-quant:2]`... | même chose sur la surface n° 1, 2... d'un cockpit ou d'un bloc programmable |
 
 Un même bloc à plusieurs surfaces peut porter les deux balises (ex. `Cockpit [alarme-line:0] [alarme-quant:1]`).
@@ -88,17 +164,7 @@ Un même bloc à plusieurs surfaces peut porter les deux balises (ex. `Cockpit [
 > [!warning] Un écran = un seul script
 > Ces écrans sont repérés par leur **nom**. Ne leur mettez pas de section `[Ecran]` dans le Custom Data, sinon [[Affichage Data Center]] les capturerait aussi (voir [[00 - Conventions et Playbook IA]]).
 
-Exemple d'écran `[alarme-line]` :
-
-```
-=== ALARMES ===
-Actives : 2 / 3
-
-[CRITIQUE] Avaries
-[MAJEUR] Carburant
-```
-
-Écrans `[alarme-quant]` : les cases sont dessinées en sprites (une couleur par case), et leur disposition suit la forme de l'écran :
+Les cases de `[alarme-quant]` sont dessinées en sprites, et leur disposition suit la forme de l'écran :
 
 | Forme de la surface | Disposition | Exemple |
 |---|---|---|
@@ -106,18 +172,14 @@ Actives : 2 / 3
 | à peu près carrée | 2 × 2 | LCD standard, écran de cockpit |
 | très haute | 4 cases en colonne | surface étroite |
 
-```
-Corner LCD :   [  1   ] [  0   ] [  2   ] [  0   ]
-                Critique  Majeur   Normal   Mineur
-```
-
 Chaque case affiche le nombre en grand et le niveau en dessous, à la plus grande taille qui tient. Une case à 0 alarme est assombrie : seuls les niveaux actifs ressortent. Si le bus est indisponible, les cases affichent `-`.
 
-## 4. Commandes
+## 6. Commandes
 
 | Argument | Effet |
 |---|---|
 | `on <Source>` | met `[Etat] <Source>=true` dans le bus (alarme sans script : bouton, capteur, minuterie) |
+| `on <Source> <niveau>` | idem, et écrit `[Criticite] <Source>=<niveau>` (`critique`, `majeur`, `normal`, `mineur`) |
 | `off <Source>` | met `[Etat] <Source>=false` |
 | `rescan` | relit immédiatement le serveur, le groupe `ALARMES` et les écrans |
 
@@ -126,61 +188,50 @@ Le nom de la source n'est pas sensible aux majuscules : `on intrusion` réutilis
 > [!warning] `on` / `off` sur une source qui a un script
 > Si un script publie déjà cette source (ex. `Avaries`), il réécrira sa propre valeur à sa prochaine exécution (~1,6 s). Pour acquitter une alarme de script, utilisez `ACK` **sur ce script**.
 
-## 5. Fonctionnement
+## 7. Fonctionnement
 
 ### Algorithme en français
 
 1. **Fréquence** : le script tourne en `Update10` (~6 fois par seconde). Une alarme publiée ou une commande `on` / `off` est donc visible presque immédiatement.
 2. **Rescan** (au démarrage, toutes les 10 s, ou avec `rescan`) : recherche du serveur, du groupe `ALARMES` (avec le filtre `[Alarme] Sources` de chaque bloc) et des écrans à balise. Les blocs et écrans déjà connus sont **réutilisés**, pour garder leur dernier état.
-3. **Lecture du bus** : à chaque exécution, le Custom Data du serveur est comparé au dernier texte lu. Il n'est **reparsé que s'il a changé**. Le script construit alors la liste des alarmes actives, triée de la plus grave à la moins grave.
+3. **Lecture du bus** : à chaque exécution, le Custom Data du serveur est comparé au dernier texte lu. Il n'est **reparsé que s'il a changé**. Le script relit alors les couleurs des niveaux, donne un numéro d'arrivée à chaque alarme qui vient de passer à `true`, retire le numéro de celles qui sont repassées à `false`, et trie la liste : niveau, puis ordre d'arrivée.
 4. **Application** (seulement si le bus a changé ou après un rescan) :
-   - chaque bloc du groupe prend la **première alarme de la liste acceptée par son filtre** : il est allumé et coloré, ou éteint s'il n'y en a aucune ;
+   - chaque bloc du groupe prend la **première alarme de la liste acceptée par son filtre** : il est allumé, dans la couleur du niveau de cette alarme, ou éteint s'il n'y en a aucune ;
    - un bloc sonore n'est lancé (`Play`) ou arrêté (`Stop`) que quand **son** état change ;
-   - les textes des écrans ne sont réécrits que s'ils ont changé.
-5. **Echo** : état du bus, alarme dominante, nombre de blocs et d'écrans, temps d'exécution.
+   - les écrans ne sont réécrits ou redessinés que si leur contenu a changé.
+5. **Sauvegarde** : l'ordre d'arrivée est enregistré dans le `Storage` du bloc programmable (`Save()`), il survit donc au rechargement de la partie.
+6. **Echo** : état du bus, niveau dominant, nombre de blocs et d'écrans, temps d'exécution.
 
-```mermaid
-flowchart LR
-    A["PB Contrôle des Avaries"] -->|"Etat: Avaries"| S[("SERVEUR_ALARMES")]
-    C["PB Carburant"] -->|"Etat: Carburant"| S
-    B["Bouton / capteur<br/>argument on X / off X"] --> P
-    P["PB Centrale d'Alarmes"] -->|"Etat: X"| S
-    S -->|"lecture si changé"| P
-    P --> G["Groupe ALARMES<br/>(couleur la plus grave)"]
-    P --> L["Écrans [alarme-line]"]
-    P --> Q["Écrans [alarme-quant]"]
-```
-
-## 6. Pourquoi une Centrale ?
+## 8. Pourquoi une Centrale ?
 
 | Sans Centrale | Avec la Centrale |
 |---|---|
 | Chaque script pilote **son** groupe (`ALARMES_CRITIQUES`, `ALARMES_URANIUM`) | Un seul pilote, un seul groupe `ALARMES` |
 | Un gyrophare commun doit être dans plusieurs groupes | Chaque gyrophare est dans un seul groupe, avec un filtre optionnel |
-| Une nouvelle alarme demande un script **et** un groupe | Une nouvelle alarme = 2 lignes dans le bus (+ un script **ou** un bouton `on` / `off`) |
+| Une nouvelle alarme demande un script **et** un groupe | Une nouvelle alarme = un script **ou** un bouton `on` / `off` |
 | Un bloc sonore commun peut redémarrer (deux scripts appellent `Play()`) | Un seul appel à `Play()` par bloc et par changement d'état |
 | Aucune vue d'ensemble | Écrans `[alarme-line]` et `[alarme-quant]` |
 
 > [!info] Et le clignotement par couleur ?
-> Une rotation des couleurs (1 s par alarme) a été envisagée puis écartée au profit de la couleur fixe de l'alarme la plus grave et des écrans de liste : c'est plus lisible, et ça ne fait pas « sapin de Noël ».
+> Une rotation des couleurs (1 s par alarme) a été envisagée puis écartée au profit de la couleur fixe du niveau le plus grave et des écrans de liste : c'est plus lisible, et ça ne fait pas « sapin de Noël ».
 
-## 7. Optimisations
-
+Optimisations :
 - **Bus reparsé seulement s'il change** : à chaque exécution, une simple comparaison de chaînes. Les scripts sources n'écrivent dans le bus que si leur valeur change.
-- **Application seulement sur changement** : les blocs et les écrans ne sont touchés qu'après un changement du bus ou un rescan, et chaque écriture (`Enabled`, `Color`, `WriteText`, `FontColor`) n'a lieu que si la valeur diffère.
+- **Application seulement sur changement** : chaque écriture (`Enabled`, `Color`, `WriteText`, `FontColor`, dessin des cases) n'a lieu que si la valeur diffère.
 - **Pas d'allocation en régime établi** : `MyIni`, listes, `StringBuilder`, objets `SourceAlarme` (réserve) et comparateur de tri sont réutilisés.
-- **Rescan périodique** (10 s) plutôt qu'à chaque exécution.
 
-## 8. Limites connues
+## 9. Limites connues
 
-- **Ne laissez pas un bloc à la fois dans `ALARMES` et dans `ALARMES_CRITIQUES` / `ALARMES_URANIUM`.** Les deux scripts calculent la même couleur dominante, mais un bloc *filtré* (`[Alarme] Sources=`) peut recevoir une autre couleur de la Centrale. Les scripts sources continuent de piloter leurs anciens groupes s'ils existent.
+- **Ne laissez pas un bloc à la fois dans `ALARMES` et dans `ALARMES_CRITIQUES` / `ALARMES_URANIUM`.** Les scripts sources continuent de piloter leurs anciens groupes s'ils existent ; un bloc *filtré* (`[Alarme] Sources=`) peut alors recevoir deux couleurs différentes.
 - Une source restée à `true` (script supprimé, `on` sans `off`) maintient l'alarme : `off <Source>`, ou supprimer la clé.
-- Le texte des écrans est recoloré par la Centrale (`COLORER_TEXTE_ECRANS`) : la couleur de police choisie à la main sur ces écrans est écrasée.
+- Si plusieurs alarmes apparaissent entre deux lectures du bus (moins de 0,2 s), elles sont numérotées dans l'ordre des clés de `[Etat]`.
+- Le texte des écrans `[alarme-line]` est recoloré (`COLORER_TEXTE_ECRANS`) : la couleur de police choisie à la main est écrasée.
 - Les écrans `[alarme-quant]` sont dessinés en sprites, donc leur réglage de texte (police, taille) est ignoré ; ils sont redessinés à chaque rescan (10 s) pour réparer un dessin perdu.
+- La liste est limitée à `MAX_LIGNES_LISTE` lignes (« ... et N autres ») : pas encore de défilement (voir la section 12).
 - Un bloc démonté reste dans la liste jusqu'au rescan suivant (10 s au plus). Il est ignoré entre-temps.
-- La couleur dominante choisie par la Centrale doit suivre la même règle que la classe `BusAlarmes` des scripts sources (criticité, `Priorite`, `[Etat]`). Si vous modifiez l'une, modifiez l'autre.
+- Les niveaux et leurs couleurs par défaut sont écrits à la fois ici et dans la classe `BusAlarmes` des scripts sources : si vous en modifiez un, modifiez l'autre.
 
-## 9. Dépannage
+## 10. Dépannage
 
 | Symptôme | Cause probable | Solution |
 |---|---|---|
@@ -188,12 +239,11 @@ flowchart LR
 | Echo : `Custom Data de SERVEUR_ALARMES illisible` | erreur de format INI | recoller `SERVEUR_ALARMES.ini` |
 | Echo : `groupe ALARMES introuvable` | nom du groupe différent | renommer le groupe exactement `ALARMES`, puis `rescan` |
 | Echo : `balise(s) invalide(s)` | `[alarme-line` sans `]`, `[alarme-line:x]`, ou surface inexistante | corriger le nom (`[alarme-line]` ou `[alarme-line:1]`) |
-| Une alarme ajoutée est orange | pas de ligne `[Couleurs]` pour cette source | ajouter `Source=R,G,B` |
-| La mauvaise couleur domine | criticité absente (`normal` par défaut) | ajouter la source dans `[Criticite]` |
+| Une alarme ajoutée est orange | pas de ligne `[Criticite]` pour cette source : elle est `normal` | ajouter `Source=critique` (ou `on Source critique`) |
 | Un gyrophare reste éteint | son filtre `[Alarme] Sources=` ne contient pas l'alarme active | corriger le filtre, puis `rescan` |
 | `on Avaries` ne tient pas | le script d'avaries republie sa propre valeur | `on` / `off` sert aux sources **sans** script ; utiliser `ACK` sur le script |
 
-## 10. Code complet
+## 11. Code complet
 
 ```csharp
 // Copyright (c) 2026 Zerma1 - https://github.com/Zerma1/Space-Engineers-scripte
@@ -204,9 +254,11 @@ flowchart LR
 // ------------------------------------------------------------------------------
 // Rôle :
 //   SEUL pilote des gyrophares. Lit le bus SERVEUR_ALARMES (où chaque script
-//   source publie [Etat] Source=true/false) et applique au groupe ALARMES la
-//   couleur de l'alarme active la plus grave. Affiche la liste des alarmes
-//   actives et leur nombre par criticité sur des écrans repérés par leur nom.
+//   source publie [Etat] Source=true/false et sa criticité) et donne au groupe
+//   ALARMES la couleur du niveau le plus grave parmi les alarmes actives
+//   (Critique, Majeur, Normal, Mineur). Affiche la liste des alarmes actives,
+//   triées par criticité puis par ordre d'arrivée, et leur nombre par niveau
+//   sur des écrans repérés par leur nom.
 //   Les scripts sources (Avaries, Carburant...) n'ont plus besoin de groupe.
 //
 // Nomenclature des blocs :
@@ -224,7 +276,9 @@ flowchart LR
 //
 // Commandes (argument du bloc programmable, majuscules/minuscules indifférentes
 // pour la commande) :
-//   - on <Source>  : active l'alarme <Source> (bouton, capteur, minuterie...).
+//   - on <Source> [niveau] : active l'alarme <Source> (bouton, capteur,
+//                    minuterie...). Niveau facultatif : critique, majeur,
+//                    normal ou mineur (écrit dans [Criticite]).
 //   - off <Source> : désactive l'alarme <Source>.
 //   - rescan       : relit immédiatement serveur, groupe et écrans.
 //
@@ -256,16 +310,15 @@ const double INTERVALLE_RESCAN_SECONDES = 10.0;
 // Nombre maximal d'alarmes listées sur un écran [alarme-line] ("... et N autres" ensuite).
 const int MAX_LIGNES_LISTE = 15;
 
-// true = le texte des écrans prend la couleur de l'alarme dominante.
+// true = le texte des écrans [alarme-line] prend la couleur du niveau le plus grave.
 const bool COLORER_TEXTE_ECRANS = true;
-
-// Couleur d'une source sans ligne [Couleurs] valide.
-readonly Color COULEUR_PAR_DEFAUT = new Color(255, 128, 0);
 
 // Couleur du texte des écrans quand aucune alarme n'est active.
 readonly Color COULEUR_TEXTE_REPOS = new Color(255, 255, 255);
 
-// Écrans [alarme-quant] : couleur de chaque niveau (critique, majeur, normal, mineur).
+// Couleur de chaque niveau (gyrophares et cases [alarme-quant]) si la section
+// [Couleurs] du bus ne la redéfinit pas (Critique=R,G,B, Majeur=..., etc.).
+// Mêmes valeurs que dans la classe BusAlarmes des scripts sources.
 readonly Color[] COULEURS_CRITICITE =
 {
     new Color(220, 20, 60),    // Critique : rouge cramoisi (crimson)
@@ -289,11 +342,10 @@ const string POLICE_SPRITES = "White";
 // NOMS DU BUS (identiques à ceux de la classe BusAlarmes des scripts sources)
 // ------------------------------------------------------------------------------
 
-const string SECTION_CONFIG = "Config";
 const string SECTION_COULEURS = "Couleurs";
 const string SECTION_ETAT = "Etat";
 const string SECTION_CRITICITE = "Criticite";
-const string CLE_PRIORITE = "Priorite";
+const string SECTION_DETAIL = "Detail";
 
 // Filtre optionnel dans le Custom Data d'un bloc du groupe ALARMES.
 const string SECTION_FILTRE = "Alarme";
@@ -332,6 +384,15 @@ readonly List<SourceAlarme> reserveSources = new List<SourceAlarme>();
 readonly Comparison<SourceAlarme> comparateurSources;
 // Nombre d'alarmes actives par rang de criticité.
 readonly int[] nombreParRang = new int[4];
+// Couleur de chaque niveau, relue dans [Couleurs] à chaque changement du bus.
+readonly Color[] couleursNiveaux = new Color[4];
+
+// Ordre d'arrivée : numéro donné à une source quand on la voit passer à true
+// (plus petit = arrivée plus tôt). Sauvegardé dans Storage pour survivre au
+// rechargement de la partie. Une source redevenue false perd son numéro.
+readonly Dictionary<string, int> arrivees = new Dictionary<string, int>();
+readonly List<string> tamponNoms = new List<string>();
+int compteurArrivees = 0;
 
 // Blocs du groupe ALARMES et écrans, conservés d'un rescan à l'autre (par
 // EntityId / surface) pour garder leur dernier état connu.
@@ -368,7 +429,45 @@ public Program()
 {
     comparateurSources = ComparerSources;
     couleurTexte = COULEUR_TEXTE_REPOS;
+    Array.Copy(COULEURS_CRITICITE, couleursNiveaux, couleursNiveaux.Length);
+    RestaurerArrivees();
     Runtime.UpdateFrequency = UpdateFrequency.Update10;
+}
+
+/// <summary>
+/// Sauvegarde l'ordre d'arrivée des alarmes actives (appelé par le jeu à
+/// l'enregistrement). Format : compteur, puis une ligne "numéro TAB source".
+/// </summary>
+public void Save()
+{
+    StringBuilder texte = constructeurTexte;
+    texte.Clear();
+    texte.Append(compteurArrivees);
+    foreach (KeyValuePair<string, int> paire in arrivees)
+    {
+        texte.Append('\n').Append(paire.Value).Append('\t').Append(paire.Key);
+    }
+    Storage = texte.ToString();
+}
+
+/// <summary>Relit l'ordre d'arrivée sauvegardé par Save() (Storage vide : rien à faire).</summary>
+void RestaurerArrivees()
+{
+    string[] lignes = (Storage ?? "").Split('\n');
+    if (!int.TryParse(lignes[0], out compteurArrivees))
+    {
+        compteurArrivees = 0;
+        return;
+    }
+    for (int i = 1; i < lignes.Length; i++)
+    {
+        int tabulation = lignes[i].IndexOf('\t');
+        int numero;
+        if (tabulation > 0 && int.TryParse(lignes[i].Substring(0, tabulation), out numero))
+        {
+            arrivees[lignes[i].Substring(tabulation + 1)] = numero;
+        }
+    }
 }
 
 /// <summary>
@@ -420,11 +519,19 @@ void TraiterCommande(string argument)
     }
     else if ((commande == "on" || commande == "off") && nomSource.Length > 0)
     {
-        ForcerSource(nomSource, commande == "on");
+        // "on Intrusion majeur" : le dernier mot peut être un niveau de criticité.
+        string niveau = "";
+        int dernierEspace = nomSource.LastIndexOf(' ');
+        if (commande == "on" && dernierEspace > 0 && TrouverRang(nomSource.Substring(dernierEspace + 1)) >= 0)
+        {
+            niveau = nomSource.Substring(dernierEspace + 1).ToLower();
+            nomSource = nomSource.Substring(0, dernierEspace).Trim();
+        }
+        ForcerSource(nomSource, commande == "on", niveau);
     }
     else
     {
-        messageCommande = "Commande inconnue : '" + argument + "' (attendu : on <Source>, off <Source> ou rescan)";
+        messageCommande = "Commande inconnue : '" + argument + "' (attendu : on <Source> [niveau], off <Source> ou rescan)";
     }
 }
 
@@ -434,7 +541,8 @@ void TraiterCommande(string argument)
 /// Si un script source publie déjà cette clé, il la réécrira à sa prochaine
 /// exécution : on/off est fait pour les sources SANS script.
 /// </summary>
-void ForcerSource(string nomSource, bool active)
+/// <param name="niveau">Criticité à écrire dans [Criticite] (vide = ne rien changer).</param>
+void ForcerSource(string nomSource, bool active, string niveau)
 {
     if (serveur == null)
     {
@@ -462,9 +570,11 @@ void ForcerSource(string nomSource, bool active)
     }
 
     lecteurIni.Set(SECTION_ETAT, cle, active);
+    if (niveau.Length > 0) lecteurIni.Set(SECTION_CRITICITE, cle, niveau);
     serveur.CustomData = lecteurIni.ToString();
     relectureForcee = true;   // le bus est relu juste après, dans Main
-    messageCommande = "Alarme " + cle + (active ? " activée." : " désactivée.");
+    messageCommande = "Alarme " + cle + (active ? " activée" : " désactivée")
+                    + (niveau.Length > 0 ? " (" + niveau + ")." : ".");
 }
 
 // ------------------------------------------------------------------------------
@@ -648,9 +758,9 @@ bool EstDeCetteConstruction(IMyTerminalBlock bloc)
 
 /// <summary>
 /// Relit SERVEUR_ALARMES seulement si son Custom Data a changé, puis construit
-/// la liste des alarmes actives, triée de la plus grave à la moins grave.
-/// Règle de tri (identique au choix de couleur de BusAlarmes) :
-/// criticité, puis ordre de [Config] Priorite, puis ordre des clés de [Etat].
+/// la liste des alarmes actives, triée par criticité (la plus grave d'abord),
+/// puis par ordre d'arrivée (la plus ancienne d'abord). Relit aussi les
+/// couleurs des niveaux dans [Couleurs].
 /// </summary>
 void LireBus()
 {
@@ -677,75 +787,96 @@ void LireBus()
     busValide = true;
     diagnosticBus = "connecté";
 
-    string[] ordrePriorite = lecteurIni.Get(SECTION_CONFIG, CLE_PRIORITE).ToString("").Split(',');
+    for (int rang = 0; rang < couleursNiveaux.Length; rang++) couleursNiveaux[rang] = LireCouleurNiveau(rang);
+
     clesEtat.Clear();
     lecteurIni.GetKeys(SECTION_ETAT, clesEtat);
     nombreSources = clesEtat.Count;
 
+    // Les clés sont parcourues dans l'ordre de [Etat] : si plusieurs sources
+    // apparaissent en même temps, elles sont numérotées dans cet ordre.
     for (int i = 0; i < clesEtat.Count; i++)
     {
         string nom = clesEtat[i].Name;
         if (!lecteurIni.Get(SECTION_ETAT, nom).ToBoolean(false)) continue;
+
+        // Ordre d'arrivée : numéro donné la première fois qu'on la voit active.
+        int arrivee;
+        if (!arrivees.TryGetValue(nom, out arrivee))
+        {
+            arrivee = ++compteurArrivees;
+            arrivees[nom] = arrivee;
+        }
 
         // Réutilisation d'un objet de la réserve.
         if (reserveSources.Count <= sourcesActives.Count) reserveSources.Add(new SourceAlarme());
         SourceAlarme source = reserveSources[sourcesActives.Count];
         source.Nom = nom;
         source.Rang = RangCriticite(nom);
-        source.Ordre = PositionDansPriorite(ordrePriorite, nom);
-        source.OrdreEtat = i;
-        source.Couleur = LireCouleur(nom);
+        source.Arrivee = arrivee;
+        source.Detail = lecteurIni.Get(SECTION_DETAIL, nom).ToString("").Trim();
         sourcesActives.Add(source);
     }
+
+    // Une source redevenue inactive (ou supprimée) perd son numéro : si elle
+    // revient, elle passe derrière les alarmes déjà présentes de son niveau.
+    tamponNoms.Clear();
+    foreach (string nom in arrivees.Keys)
+    {
+        if (!lecteurIni.Get(SECTION_ETAT, nom).ToBoolean(false)) tamponNoms.Add(nom);
+    }
+    foreach (string nom in tamponNoms) arrivees.Remove(nom);
+    if (arrivees.Count == 0) compteurArrivees = 0;
+
     sourcesActives.Sort(comparateurSources);
 }
 
-/// <summary>Ordre de gravité : criticité, puis Priorite, puis position dans [Etat].</summary>
+/// <summary>Ordre d'affichage : criticité (la plus grave d'abord), puis ordre d'arrivée.</summary>
 static int ComparerSources(SourceAlarme a, SourceAlarme b)
 {
     if (a.Rang != b.Rang) return a.Rang.CompareTo(b.Rang);
-    if (a.Ordre != b.Ordre) return a.Ordre.CompareTo(b.Ordre);
-    return a.OrdreEtat.CompareTo(b.OrdreEtat);
+    return a.Arrivee.CompareTo(b.Arrivee);
+}
+
+/// <summary>Rang de criticité d'une source lu dans [Criticite] (absente ou inconnue : normal).</summary>
+int RangCriticite(string nomSource)
+{
+    int rang = TrouverRang(lecteurIni.Get(SECTION_CRITICITE, nomSource).ToString(""));
+    return rang >= 0 ? rang : RANG_CRITICITE_DEFAUT;
 }
 
 /// <summary>
-/// Rang de criticité d'une source lu dans [Criticite] : 0 = critique,
-/// 1 = majeur, 2 = normal, 3 = mineur (anciens noms importante / normale /
-/// basse acceptés). Absente ou inconnue : normal.
+/// Rang d'un niveau écrit en toutes lettres : 0 = critique, 1 = majeur,
+/// 2 = normal, 3 = mineur (anciens noms importante / normale / basse
+/// acceptés). Renvoie -1 si le mot n'est pas un niveau.
 /// </summary>
-int RangCriticite(string nomSource)
+int TrouverRang(string niveau)
 {
-    string niveau = lecteurIni.Get(SECTION_CRITICITE, nomSource).ToString("").Trim();
+    string mot = (niveau ?? "").Trim();
     for (int rang = 0; rang < NIVEAUX_CRITICITE.Length; rang++)
     {
-        foreach (string mot in NIVEAUX_CRITICITE[rang])
+        foreach (string accepte in NIVEAUX_CRITICITE[rang])
         {
-            if (string.Equals(niveau, mot, StringComparison.OrdinalIgnoreCase)) return rang;
+            if (string.Equals(mot, accepte, StringComparison.OrdinalIgnoreCase)) return rang;
         }
     }
-    return RANG_CRITICITE_DEFAUT;
+    return -1;
 }
 
-/// <summary>Position d'une source dans [Config] Priorite (int.MaxValue si absente).</summary>
-static int PositionDansPriorite(string[] ordrePriorite, string nomSource)
+/// <summary>
+/// Lit la couleur "R,G,B" d'un niveau dans [Couleurs] (clé Critique, Majeur,
+/// Normal ou Mineur). Couleur par défaut du niveau si absente ou mal écrite.
+/// </summary>
+Color LireCouleurNiveau(int rang)
 {
-    for (int i = 0; i < ordrePriorite.Length; i++)
-    {
-        if (string.Equals(ordrePriorite[i].Trim(), nomSource, StringComparison.OrdinalIgnoreCase)) return i;
-    }
-    return int.MaxValue;
-}
-
-/// <summary>Lit la couleur "R,G,B" d'une source dans [Couleurs] (couleur par défaut sinon).</summary>
-Color LireCouleur(string nomSource)
-{
-    string[] morceaux = lecteurIni.Get(SECTION_COULEURS, nomSource).ToString("").Split(',');
-    if (morceaux.Length != 3) return COULEUR_PAR_DEFAUT;
+    Color parDefaut = COULEURS_CRITICITE[rang];
+    string[] morceaux = lecteurIni.Get(SECTION_COULEURS, LIBELLES_CRITICITE[rang]).ToString("").Split(',');
+    if (morceaux.Length != 3) return parDefaut;
 
     int rouge, vert, bleu;
-    if (!int.TryParse(morceaux[0].Trim(), out rouge)) return COULEUR_PAR_DEFAUT;
-    if (!int.TryParse(morceaux[1].Trim(), out vert)) return COULEUR_PAR_DEFAUT;
-    if (!int.TryParse(morceaux[2].Trim(), out bleu)) return COULEUR_PAR_DEFAUT;
+    if (!int.TryParse(morceaux[0].Trim(), out rouge)) return parDefaut;
+    if (!int.TryParse(morceaux[1].Trim(), out vert)) return parDefaut;
+    if (!int.TryParse(morceaux[2].Trim(), out bleu)) return parDefaut;
 
     return new Color(Borner(rouge), Borner(vert), Borner(bleu));
 }
@@ -768,7 +899,7 @@ void ConstruireTextes()
     Array.Clear(nombreParRang, 0, nombreParRang.Length);
     foreach (SourceAlarme source in sourcesActives) nombreParRang[source.Rang]++;
 
-    couleurTexte = sourcesActives.Count > 0 ? sourcesActives[0].Couleur : COULEUR_TEXTE_REPOS;
+    couleurTexte = sourcesActives.Count > 0 ? couleursNiveaux[sourcesActives[0].Rang] : COULEUR_TEXTE_REPOS;
 
     // ---- Liste des alarmes ----------------------------------------------------
     StringBuilder texte = constructeurTexte;
@@ -786,8 +917,13 @@ void ConstruireTextes()
         int affichees = Math.Min(sourcesActives.Count, MAX_LIGNES_LISTE);
         for (int i = 0; i < affichees; i++)
         {
+            // Numéro = priorité affichée (1 = la plus urgente).
             SourceAlarme source = sourcesActives[i];
-            texte.Append('[').Append(LIBELLES_CRITICITE[source.Rang].ToUpper()).Append("] ").Append(source.Nom).Append('\n');
+            texte.Append(i + 1).Append(". [").Append(LIBELLES_CRITICITE[source.Rang].ToUpper()).Append("] ")
+                 .Append(source.Nom);
+            // Détail publié par le script (ex. "Carburant + Uranium" pour Energie).
+            if (source.Detail.Length > 0) texte.Append(" : ").Append(source.Detail);
+            texte.Append('\n');
         }
         if (sourcesActives.Count > affichees)
         {
@@ -827,7 +963,12 @@ void AppliquerAuxBlocs()
         if (bloc.Enabled != actif) bloc.Enabled = actif;
 
         IMyLightingBlock lumiere = bloc as IMyLightingBlock;
-        if (lumiere != null && actif && lumiere.Color != dominante.Couleur) lumiere.Color = dominante.Couleur;
+        // La couleur est celle du NIVEAU de l'alarme dominante.
+        if (lumiere != null && actif)
+        {
+            Color couleur = couleursNiveaux[dominante.Rang];
+            if (lumiere.Color != couleur) lumiere.Color = couleur;
+        }
 
         IMySoundBlock son = bloc as IMySoundBlock;
         if (son != null && (!element.Synchronise || element.DernierEtat != actif))
@@ -919,7 +1060,7 @@ void DessinerCases(EcranAlarme ecran)
     {
         int nombre = nombreParRang[rang];
         bool allumee = busValide && nombre > 0;
-        Color couleur = COULEURS_CRITICITE[rang];
+        Color couleur = couleursNiveaux[rang];
         Color fond = allumee ? couleur : Attenuer(couleur, ATTENUATION_CASE_VIDE);
         Color encre = allumee ? COULEURS_TEXTE_CASE[rang] : COULEUR_TEXTE_CASE_VIDE;
 
@@ -1003,10 +1144,9 @@ void AfficherEcho()
 public class SourceAlarme
 {
     public string Nom;      // clé de [Etat]
-    public int Rang;        // 0 = critique ... 3 = basse
-    public int Ordre;       // position dans [Config] Priorite (int.MaxValue si absente)
-    public int OrdreEtat;   // position dans [Etat] (départage final)
-    public Color Couleur;   // [Couleurs] Source=R,G,B
+    public int Rang;        // 0 = critique, 1 = majeur, 2 = normal, 3 = mineur
+    public int Arrivee;     // ordre d'arrivée (plus petit = plus ancienne)
+    public string Detail;   // [Detail] Source=texte ("" si absent)
 }
 
 /// <summary>Un bloc du groupe ALARMES et son dernier état appliqué.</summary>
@@ -1029,9 +1169,14 @@ public class EcranAlarme
 }
 ```
 
+## 12. Idées pour la suite
+
+- **Un écran par niveau** : `[alarme-line-Critique]`, `[alarme-line-Majeur]`, `[alarme-line-Normal]`, `[alarme-line-Mineur]`, chacun ne listant que les alarmes de son niveau.
+- **Défilement** de la liste `[alarme-line]` quand elle dépasse l'écran (pages qui s'enchaînent toutes les quelques secondes, nombre de lignes adapté à la taille de l'écran).
+
 ## Voir aussi
 
 - [[Bus d'Alarmes]] — format de SERVEUR_ALARMES, classe `BusAlarmes` des scripts sources
 - [[Controle des Avaries]] — source `Avaries` (critique)
-- [[Surveillance Carburant Uranium]] — source `Carburant` (majeur)
+- [[Surveillance Carburant Uranium]] — alarmes `Carburant`, `Uranium`, `Glace`, `Batteries` et `Energie`
 - [[00 - Conventions et Playbook IA]]

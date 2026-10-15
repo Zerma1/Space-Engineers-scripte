@@ -6,9 +6,11 @@
 // ------------------------------------------------------------------------------
 // Rôle :
 //   SEUL pilote des gyrophares. Lit le bus SERVEUR_ALARMES (où chaque script
-//   source publie [Etat] Source=true/false) et applique au groupe ALARMES la
-//   couleur de l'alarme active la plus grave. Affiche la liste des alarmes
-//   actives et leur nombre par criticité sur des écrans repérés par leur nom.
+//   source publie [Etat] Source=true/false et sa criticité) et donne au groupe
+//   ALARMES la couleur du niveau le plus grave parmi les alarmes actives
+//   (Critique, Majeur, Normal, Mineur). Affiche la liste des alarmes actives,
+//   triées par criticité puis par ordre d'arrivée, et leur nombre par niveau
+//   sur des écrans repérés par leur nom.
 //   Les scripts sources (Avaries, Carburant...) n'ont plus besoin de groupe.
 //
 // Nomenclature des blocs :
@@ -26,7 +28,9 @@
 //
 // Commandes (argument du bloc programmable, majuscules/minuscules indifférentes
 // pour la commande) :
-//   - on <Source>  : active l'alarme <Source> (bouton, capteur, minuterie...).
+//   - on <Source> [niveau] : active l'alarme <Source> (bouton, capteur,
+//                    minuterie...). Niveau facultatif : critique, majeur,
+//                    normal ou mineur (écrit dans [Criticite]).
 //   - off <Source> : désactive l'alarme <Source>.
 //   - rescan       : relit immédiatement serveur, groupe et écrans.
 //
@@ -58,16 +62,15 @@ const double INTERVALLE_RESCAN_SECONDES = 10.0;
 // Nombre maximal d'alarmes listées sur un écran [alarme-line] ("... et N autres" ensuite).
 const int MAX_LIGNES_LISTE = 15;
 
-// true = le texte des écrans prend la couleur de l'alarme dominante.
+// true = le texte des écrans [alarme-line] prend la couleur du niveau le plus grave.
 const bool COLORER_TEXTE_ECRANS = true;
-
-// Couleur d'une source sans ligne [Couleurs] valide.
-readonly Color COULEUR_PAR_DEFAUT = new Color(255, 128, 0);
 
 // Couleur du texte des écrans quand aucune alarme n'est active.
 readonly Color COULEUR_TEXTE_REPOS = new Color(255, 255, 255);
 
-// Écrans [alarme-quant] : couleur de chaque niveau (critique, majeur, normal, mineur).
+// Couleur de chaque niveau (gyrophares et cases [alarme-quant]) si la section
+// [Couleurs] du bus ne la redéfinit pas (Critique=R,G,B, Majeur=..., etc.).
+// Mêmes valeurs que dans la classe BusAlarmes des scripts sources.
 readonly Color[] COULEURS_CRITICITE =
 {
     new Color(220, 20, 60),    // Critique : rouge cramoisi (crimson)
@@ -91,11 +94,10 @@ const string POLICE_SPRITES = "White";
 // NOMS DU BUS (identiques à ceux de la classe BusAlarmes des scripts sources)
 // ------------------------------------------------------------------------------
 
-const string SECTION_CONFIG = "Config";
 const string SECTION_COULEURS = "Couleurs";
 const string SECTION_ETAT = "Etat";
 const string SECTION_CRITICITE = "Criticite";
-const string CLE_PRIORITE = "Priorite";
+const string SECTION_DETAIL = "Detail";
 
 // Filtre optionnel dans le Custom Data d'un bloc du groupe ALARMES.
 const string SECTION_FILTRE = "Alarme";
@@ -134,6 +136,15 @@ readonly List<SourceAlarme> reserveSources = new List<SourceAlarme>();
 readonly Comparison<SourceAlarme> comparateurSources;
 // Nombre d'alarmes actives par rang de criticité.
 readonly int[] nombreParRang = new int[4];
+// Couleur de chaque niveau, relue dans [Couleurs] à chaque changement du bus.
+readonly Color[] couleursNiveaux = new Color[4];
+
+// Ordre d'arrivée : numéro donné à une source quand on la voit passer à true
+// (plus petit = arrivée plus tôt). Sauvegardé dans Storage pour survivre au
+// rechargement de la partie. Une source redevenue false perd son numéro.
+readonly Dictionary<string, int> arrivees = new Dictionary<string, int>();
+readonly List<string> tamponNoms = new List<string>();
+int compteurArrivees = 0;
 
 // Blocs du groupe ALARMES et écrans, conservés d'un rescan à l'autre (par
 // EntityId / surface) pour garder leur dernier état connu.
@@ -170,7 +181,45 @@ public Program()
 {
     comparateurSources = ComparerSources;
     couleurTexte = COULEUR_TEXTE_REPOS;
+    Array.Copy(COULEURS_CRITICITE, couleursNiveaux, couleursNiveaux.Length);
+    RestaurerArrivees();
     Runtime.UpdateFrequency = UpdateFrequency.Update10;
+}
+
+/// <summary>
+/// Sauvegarde l'ordre d'arrivée des alarmes actives (appelé par le jeu à
+/// l'enregistrement). Format : compteur, puis une ligne "numéro TAB source".
+/// </summary>
+public void Save()
+{
+    StringBuilder texte = constructeurTexte;
+    texte.Clear();
+    texte.Append(compteurArrivees);
+    foreach (KeyValuePair<string, int> paire in arrivees)
+    {
+        texte.Append('\n').Append(paire.Value).Append('\t').Append(paire.Key);
+    }
+    Storage = texte.ToString();
+}
+
+/// <summary>Relit l'ordre d'arrivée sauvegardé par Save() (Storage vide : rien à faire).</summary>
+void RestaurerArrivees()
+{
+    string[] lignes = (Storage ?? "").Split('\n');
+    if (!int.TryParse(lignes[0], out compteurArrivees))
+    {
+        compteurArrivees = 0;
+        return;
+    }
+    for (int i = 1; i < lignes.Length; i++)
+    {
+        int tabulation = lignes[i].IndexOf('\t');
+        int numero;
+        if (tabulation > 0 && int.TryParse(lignes[i].Substring(0, tabulation), out numero))
+        {
+            arrivees[lignes[i].Substring(tabulation + 1)] = numero;
+        }
+    }
 }
 
 /// <summary>
@@ -222,11 +271,19 @@ void TraiterCommande(string argument)
     }
     else if ((commande == "on" || commande == "off") && nomSource.Length > 0)
     {
-        ForcerSource(nomSource, commande == "on");
+        // "on Intrusion majeur" : le dernier mot peut être un niveau de criticité.
+        string niveau = "";
+        int dernierEspace = nomSource.LastIndexOf(' ');
+        if (commande == "on" && dernierEspace > 0 && TrouverRang(nomSource.Substring(dernierEspace + 1)) >= 0)
+        {
+            niveau = nomSource.Substring(dernierEspace + 1).ToLower();
+            nomSource = nomSource.Substring(0, dernierEspace).Trim();
+        }
+        ForcerSource(nomSource, commande == "on", niveau);
     }
     else
     {
-        messageCommande = "Commande inconnue : '" + argument + "' (attendu : on <Source>, off <Source> ou rescan)";
+        messageCommande = "Commande inconnue : '" + argument + "' (attendu : on <Source> [niveau], off <Source> ou rescan)";
     }
 }
 
@@ -236,7 +293,8 @@ void TraiterCommande(string argument)
 /// Si un script source publie déjà cette clé, il la réécrira à sa prochaine
 /// exécution : on/off est fait pour les sources SANS script.
 /// </summary>
-void ForcerSource(string nomSource, bool active)
+/// <param name="niveau">Criticité à écrire dans [Criticite] (vide = ne rien changer).</param>
+void ForcerSource(string nomSource, bool active, string niveau)
 {
     if (serveur == null)
     {
@@ -264,9 +322,11 @@ void ForcerSource(string nomSource, bool active)
     }
 
     lecteurIni.Set(SECTION_ETAT, cle, active);
+    if (niveau.Length > 0) lecteurIni.Set(SECTION_CRITICITE, cle, niveau);
     serveur.CustomData = lecteurIni.ToString();
     relectureForcee = true;   // le bus est relu juste après, dans Main
-    messageCommande = "Alarme " + cle + (active ? " activée." : " désactivée.");
+    messageCommande = "Alarme " + cle + (active ? " activée" : " désactivée")
+                    + (niveau.Length > 0 ? " (" + niveau + ")." : ".");
 }
 
 // ------------------------------------------------------------------------------
@@ -450,9 +510,9 @@ bool EstDeCetteConstruction(IMyTerminalBlock bloc)
 
 /// <summary>
 /// Relit SERVEUR_ALARMES seulement si son Custom Data a changé, puis construit
-/// la liste des alarmes actives, triée de la plus grave à la moins grave.
-/// Règle de tri (identique au choix de couleur de BusAlarmes) :
-/// criticité, puis ordre de [Config] Priorite, puis ordre des clés de [Etat].
+/// la liste des alarmes actives, triée par criticité (la plus grave d'abord),
+/// puis par ordre d'arrivée (la plus ancienne d'abord). Relit aussi les
+/// couleurs des niveaux dans [Couleurs].
 /// </summary>
 void LireBus()
 {
@@ -479,75 +539,96 @@ void LireBus()
     busValide = true;
     diagnosticBus = "connecté";
 
-    string[] ordrePriorite = lecteurIni.Get(SECTION_CONFIG, CLE_PRIORITE).ToString("").Split(',');
+    for (int rang = 0; rang < couleursNiveaux.Length; rang++) couleursNiveaux[rang] = LireCouleurNiveau(rang);
+
     clesEtat.Clear();
     lecteurIni.GetKeys(SECTION_ETAT, clesEtat);
     nombreSources = clesEtat.Count;
 
+    // Les clés sont parcourues dans l'ordre de [Etat] : si plusieurs sources
+    // apparaissent en même temps, elles sont numérotées dans cet ordre.
     for (int i = 0; i < clesEtat.Count; i++)
     {
         string nom = clesEtat[i].Name;
         if (!lecteurIni.Get(SECTION_ETAT, nom).ToBoolean(false)) continue;
+
+        // Ordre d'arrivée : numéro donné la première fois qu'on la voit active.
+        int arrivee;
+        if (!arrivees.TryGetValue(nom, out arrivee))
+        {
+            arrivee = ++compteurArrivees;
+            arrivees[nom] = arrivee;
+        }
 
         // Réutilisation d'un objet de la réserve.
         if (reserveSources.Count <= sourcesActives.Count) reserveSources.Add(new SourceAlarme());
         SourceAlarme source = reserveSources[sourcesActives.Count];
         source.Nom = nom;
         source.Rang = RangCriticite(nom);
-        source.Ordre = PositionDansPriorite(ordrePriorite, nom);
-        source.OrdreEtat = i;
-        source.Couleur = LireCouleur(nom);
+        source.Arrivee = arrivee;
+        source.Detail = lecteurIni.Get(SECTION_DETAIL, nom).ToString("").Trim();
         sourcesActives.Add(source);
     }
+
+    // Une source redevenue inactive (ou supprimée) perd son numéro : si elle
+    // revient, elle passe derrière les alarmes déjà présentes de son niveau.
+    tamponNoms.Clear();
+    foreach (string nom in arrivees.Keys)
+    {
+        if (!lecteurIni.Get(SECTION_ETAT, nom).ToBoolean(false)) tamponNoms.Add(nom);
+    }
+    foreach (string nom in tamponNoms) arrivees.Remove(nom);
+    if (arrivees.Count == 0) compteurArrivees = 0;
+
     sourcesActives.Sort(comparateurSources);
 }
 
-/// <summary>Ordre de gravité : criticité, puis Priorite, puis position dans [Etat].</summary>
+/// <summary>Ordre d'affichage : criticité (la plus grave d'abord), puis ordre d'arrivée.</summary>
 static int ComparerSources(SourceAlarme a, SourceAlarme b)
 {
     if (a.Rang != b.Rang) return a.Rang.CompareTo(b.Rang);
-    if (a.Ordre != b.Ordre) return a.Ordre.CompareTo(b.Ordre);
-    return a.OrdreEtat.CompareTo(b.OrdreEtat);
+    return a.Arrivee.CompareTo(b.Arrivee);
+}
+
+/// <summary>Rang de criticité d'une source lu dans [Criticite] (absente ou inconnue : normal).</summary>
+int RangCriticite(string nomSource)
+{
+    int rang = TrouverRang(lecteurIni.Get(SECTION_CRITICITE, nomSource).ToString(""));
+    return rang >= 0 ? rang : RANG_CRITICITE_DEFAUT;
 }
 
 /// <summary>
-/// Rang de criticité d'une source lu dans [Criticite] : 0 = critique,
-/// 1 = majeur, 2 = normal, 3 = mineur (anciens noms importante / normale /
-/// basse acceptés). Absente ou inconnue : normal.
+/// Rang d'un niveau écrit en toutes lettres : 0 = critique, 1 = majeur,
+/// 2 = normal, 3 = mineur (anciens noms importante / normale / basse
+/// acceptés). Renvoie -1 si le mot n'est pas un niveau.
 /// </summary>
-int RangCriticite(string nomSource)
+int TrouverRang(string niveau)
 {
-    string niveau = lecteurIni.Get(SECTION_CRITICITE, nomSource).ToString("").Trim();
+    string mot = (niveau ?? "").Trim();
     for (int rang = 0; rang < NIVEAUX_CRITICITE.Length; rang++)
     {
-        foreach (string mot in NIVEAUX_CRITICITE[rang])
+        foreach (string accepte in NIVEAUX_CRITICITE[rang])
         {
-            if (string.Equals(niveau, mot, StringComparison.OrdinalIgnoreCase)) return rang;
+            if (string.Equals(mot, accepte, StringComparison.OrdinalIgnoreCase)) return rang;
         }
     }
-    return RANG_CRITICITE_DEFAUT;
+    return -1;
 }
 
-/// <summary>Position d'une source dans [Config] Priorite (int.MaxValue si absente).</summary>
-static int PositionDansPriorite(string[] ordrePriorite, string nomSource)
+/// <summary>
+/// Lit la couleur "R,G,B" d'un niveau dans [Couleurs] (clé Critique, Majeur,
+/// Normal ou Mineur). Couleur par défaut du niveau si absente ou mal écrite.
+/// </summary>
+Color LireCouleurNiveau(int rang)
 {
-    for (int i = 0; i < ordrePriorite.Length; i++)
-    {
-        if (string.Equals(ordrePriorite[i].Trim(), nomSource, StringComparison.OrdinalIgnoreCase)) return i;
-    }
-    return int.MaxValue;
-}
-
-/// <summary>Lit la couleur "R,G,B" d'une source dans [Couleurs] (couleur par défaut sinon).</summary>
-Color LireCouleur(string nomSource)
-{
-    string[] morceaux = lecteurIni.Get(SECTION_COULEURS, nomSource).ToString("").Split(',');
-    if (morceaux.Length != 3) return COULEUR_PAR_DEFAUT;
+    Color parDefaut = COULEURS_CRITICITE[rang];
+    string[] morceaux = lecteurIni.Get(SECTION_COULEURS, LIBELLES_CRITICITE[rang]).ToString("").Split(',');
+    if (morceaux.Length != 3) return parDefaut;
 
     int rouge, vert, bleu;
-    if (!int.TryParse(morceaux[0].Trim(), out rouge)) return COULEUR_PAR_DEFAUT;
-    if (!int.TryParse(morceaux[1].Trim(), out vert)) return COULEUR_PAR_DEFAUT;
-    if (!int.TryParse(morceaux[2].Trim(), out bleu)) return COULEUR_PAR_DEFAUT;
+    if (!int.TryParse(morceaux[0].Trim(), out rouge)) return parDefaut;
+    if (!int.TryParse(morceaux[1].Trim(), out vert)) return parDefaut;
+    if (!int.TryParse(morceaux[2].Trim(), out bleu)) return parDefaut;
 
     return new Color(Borner(rouge), Borner(vert), Borner(bleu));
 }
@@ -570,7 +651,7 @@ void ConstruireTextes()
     Array.Clear(nombreParRang, 0, nombreParRang.Length);
     foreach (SourceAlarme source in sourcesActives) nombreParRang[source.Rang]++;
 
-    couleurTexte = sourcesActives.Count > 0 ? sourcesActives[0].Couleur : COULEUR_TEXTE_REPOS;
+    couleurTexte = sourcesActives.Count > 0 ? couleursNiveaux[sourcesActives[0].Rang] : COULEUR_TEXTE_REPOS;
 
     // ---- Liste des alarmes ----------------------------------------------------
     StringBuilder texte = constructeurTexte;
@@ -588,8 +669,13 @@ void ConstruireTextes()
         int affichees = Math.Min(sourcesActives.Count, MAX_LIGNES_LISTE);
         for (int i = 0; i < affichees; i++)
         {
+            // Numéro = priorité affichée (1 = la plus urgente).
             SourceAlarme source = sourcesActives[i];
-            texte.Append('[').Append(LIBELLES_CRITICITE[source.Rang].ToUpper()).Append("] ").Append(source.Nom).Append('\n');
+            texte.Append(i + 1).Append(". [").Append(LIBELLES_CRITICITE[source.Rang].ToUpper()).Append("] ")
+                 .Append(source.Nom);
+            // Détail publié par le script (ex. "Carburant + Uranium" pour Energie).
+            if (source.Detail.Length > 0) texte.Append(" : ").Append(source.Detail);
+            texte.Append('\n');
         }
         if (sourcesActives.Count > affichees)
         {
@@ -629,7 +715,12 @@ void AppliquerAuxBlocs()
         if (bloc.Enabled != actif) bloc.Enabled = actif;
 
         IMyLightingBlock lumiere = bloc as IMyLightingBlock;
-        if (lumiere != null && actif && lumiere.Color != dominante.Couleur) lumiere.Color = dominante.Couleur;
+        // La couleur est celle du NIVEAU de l'alarme dominante.
+        if (lumiere != null && actif)
+        {
+            Color couleur = couleursNiveaux[dominante.Rang];
+            if (lumiere.Color != couleur) lumiere.Color = couleur;
+        }
 
         IMySoundBlock son = bloc as IMySoundBlock;
         if (son != null && (!element.Synchronise || element.DernierEtat != actif))
@@ -721,7 +812,7 @@ void DessinerCases(EcranAlarme ecran)
     {
         int nombre = nombreParRang[rang];
         bool allumee = busValide && nombre > 0;
-        Color couleur = COULEURS_CRITICITE[rang];
+        Color couleur = couleursNiveaux[rang];
         Color fond = allumee ? couleur : Attenuer(couleur, ATTENUATION_CASE_VIDE);
         Color encre = allumee ? COULEURS_TEXTE_CASE[rang] : COULEUR_TEXTE_CASE_VIDE;
 
@@ -805,10 +896,9 @@ void AfficherEcho()
 public class SourceAlarme
 {
     public string Nom;      // clé de [Etat]
-    public int Rang;        // 0 = critique ... 3 = basse
-    public int Ordre;       // position dans [Config] Priorite (int.MaxValue si absente)
-    public int OrdreEtat;   // position dans [Etat] (départage final)
-    public Color Couleur;   // [Couleurs] Source=R,G,B
+    public int Rang;        // 0 = critique, 1 = majeur, 2 = normal, 3 = mineur
+    public int Arrivee;     // ordre d'arrivée (plus petit = plus ancienne)
+    public string Detail;   // [Detail] Source=texte ("" si absent)
 }
 
 /// <summary>Un bloc du groupe ALARMES et son dernier état appliqué.</summary>
