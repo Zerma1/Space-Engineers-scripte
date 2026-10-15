@@ -46,8 +46,9 @@ const string ROLE_ECRAN = "Avaries";
 // Nom de la source dans le bus d'alarmes SERVEUR_ALARMES.
 const string SOURCE_ALARME = "Avaries";
 
-// Couleur propre de l'alarme (utilisée sans serveur ou si [Couleurs] est absent).
-readonly Color COULEUR_ALARME = new Color(255, 0, 0);
+// Criticité de cette alarme (critique, majeur, normal, mineur) : elle donne la
+// couleur des gyrophares. Écrite dans [Criticite] du bus à chaque changement.
+const string CRITICITE_ALARME = "critique";
 
 // Nombre maximal de blocs contrôlés par exécution (scan par lots).
 const int BLOCS_PAR_EXECUTION = 250;
@@ -104,7 +105,7 @@ string messageCommande = "";        // retour de la dernière commande, pour Ech
 /// </summary>
 public Program()
 {
-    busAlarmes = new BusAlarmes(SOURCE_ALARME, COULEUR_ALARME);
+    busAlarmes = new BusAlarmes();
     ecransAvaries = new EcransRole(ROLE_ECRAN);
     Runtime.UpdateFrequency = UpdateFrequency.Update100;
 }
@@ -139,7 +140,8 @@ public void Main(string argument, UpdateType updateSource)
 
     TraiterLot();
 
-    busAlarmes.Publier(besoinAlarme);
+    busAlarmes.Publier(SOURCE_ALARME, besoinAlarme, CRITICITE_ALARME, "");
+    busAlarmes.Terminer();
     busAlarmes.AppliquerAuxBlocs(blocsAlarme);
 
     AfficherEcho();
@@ -523,32 +525,35 @@ public class Avarie
 // Ne PAS modifier cette classe dans un seul script : elle doit rester strictement
 // identique dans "Contrôle des Avaries" et "Gestionnaire de Carburant", sinon les
 // deux scripts ne calculeraient plus le même état global et se battraient de
-// nouveau pour les gyrophares.
+// nouveau pour les gyrophares. Les niveaux et leurs couleurs sont aussi ceux de
+// la "Centrale d'Alarmes".
 // ==============================================================================
 
 /// <summary>
 /// Bus d'alarmes partagé entre plusieurs blocs programmables.
-/// QUOI : chaque script publie son propre besoin d'alarme (Source=true/false)
-/// dans la section [Etat] du Custom Data d'un bloc nommé SERVEUR_ALARMES, puis
-/// relit toutes les sources pour calculer UN état global (au moins une source
-/// active) et UNE couleur (source active la plus critique, puis [Config] Priorite).
+/// QUOI : à chaque exécution, un script publie UNE OU PLUSIEURS alarmes avec
+/// Publier(source, besoin, criticité, détail), puis appelle Terminer(). Chaque
+/// alarme est écrite dans le Custom Data d'un bloc nommé SERVEUR_ALARMES :
+/// [Etat] Source=true/false, [Criticite] Source=niveau, [Detail] Source=texte.
+/// Terminer() relit ensuite toutes les sources pour calculer UN état global (au
+/// moins une source active) et UNE couleur : celle du niveau le plus grave parmi
+/// les sources actives ([Couleurs] Critique=R,G,B, Majeur=..., Normal=..., Mineur=...).
 /// POURQUOI : sans ce bus, le script d'avaries éteignait les gyrophares que le
 /// script de carburant venait d'allumer (et inversement). Avec le bus, tous les
 /// scripts calculent exactement le même état : plus de conflit.
 /// Si le bloc SERVEUR_ALARMES n'existe pas, la classe fonctionne en mode
-/// autonome : état global = besoin propre du script, couleur = couleur propre.
+/// autonome : état global = alarmes de CE script, couleur = leur niveau le plus grave.
 /// </summary>
 public class BusAlarmes
 {
     /// <summary>Nom exact du bloc dont le Custom Data sert de bus.</summary>
     public const string NOM_SERVEUR = "SERVEUR_ALARMES";
 
-    // Noms des sections et des clés du Custom Data partagé.
-    const string SECTION_CONFIG = "Config";
+    // Noms des sections du Custom Data partagé.
     const string SECTION_COULEURS = "Couleurs";
     const string SECTION_ETAT = "Etat";
-    const string CLE_PRIORITE = "Priorite";
     const string SECTION_CRITICITE = "Criticite";
+    const string SECTION_DETAIL = "Detail";
 
     // Niveaux de criticité, du plus grave au moins grave (l'index sert de rang).
     // Plusieurs mots acceptés par niveau (les anciens noms restent valides).
@@ -559,12 +564,17 @@ public class BusAlarmes
         new[] { "normal", "normale" },
         new[] { "mineur", "mineure", "basse" }
     };
+    // Nom de chaque niveau, dans le même ordre : clé de [Couleurs] et texte affiché.
+    static readonly string[] LIBELLES_CRITICITE = { "Critique", "Majeur", "Normal", "Mineur" };
+    // Couleur de chaque niveau si [Couleurs] ne la redéfinit pas.
+    static readonly Color[] COULEURS_PAR_DEFAUT =
+    {
+        new Color(220, 20, 60),    // Critique : rouge cramoisi
+        new Color(255, 0, 0),      // Majeur   : rouge
+        new Color(255, 140, 0),    // Normal   : orange
+        new Color(0, 255, 255)     // Mineur   : cyan
+    };
     const int RANG_CRITICITE_DEFAUT = 2;   // "normal"
-
-    // Identité du script qui utilise ce bus (ex. "Avaries", "Carburant").
-    readonly string source;
-    // Couleur utilisée en mode autonome ou si la couleur du serveur est illisible.
-    readonly Color couleurPropre;
 
     // Objets réutilisés d'une exécution à l'autre (évite les allocations).
     readonly MyIni lecteurIni = new MyIni();
@@ -583,6 +593,13 @@ public class BusAlarmes
     // Dernier état global effectivement appliqué aux blocs d'alarme.
     bool etatApplique;
 
+    // Cycle en cours (entre le premier Publier() et Terminer()).
+    bool cycleOuvert;
+    bool connecte;          // serveur présent et lisible pendant ce cycle
+    bool modifie;           // le Custom Data doit être réécrit
+    bool besoinLocal;       // au moins une alarme de CE script est active
+    int rangLocal;          // niveau le plus grave parmi les alarmes actives de CE script
+
     /// <summary>Vrai si un bloc SERVEUR_ALARMES a été trouvé au dernier scan.</summary>
     public bool ServeurPresent { get { return serveur != null; } }
 
@@ -592,23 +609,17 @@ public class BusAlarmes
     /// <summary>Couleur à appliquer aux lumières quand l'alarme globale est active.</summary>
     public Color CouleurGlobale { get; private set; }
 
-    /// <summary>Nom de la source qui impose sa couleur (vide si aucune alarme).</summary>
-    public string SourceDominante { get; private set; }
+    /// <summary>Niveau le plus grave parmi les sources actives (ex. "Critique" ; vide si aucune alarme).</summary>
+    public string NiveauDominant { get; private set; }
 
     /// <summary>Message court destiné à Echo (état du bus, erreurs de configuration).</summary>
     public string Diagnostic { get; private set; }
 
-    /// <summary>
-    /// Crée le bus pour une source donnée.
-    /// </summary>
-    /// <param name="source">Nom de la source (clé utilisée dans [Etat] et [Couleurs]).</param>
-    /// <param name="couleurPropre">Couleur par défaut de cette source.</param>
-    public BusAlarmes(string source, Color couleurPropre)
+    /// <summary>Crée le bus (les alarmes sont déclarées ensuite par Publier).</summary>
+    public BusAlarmes()
     {
-        this.source = source;
-        this.couleurPropre = couleurPropre;
-        CouleurGlobale = couleurPropre;
-        SourceDominante = "";
+        CouleurGlobale = COULEURS_PAR_DEFAUT[RANG_CRITICITE_DEFAUT];
+        NiveauDominant = "";
         Diagnostic = "pas encore initialisé";
     }
 
@@ -642,50 +653,80 @@ public class BusAlarmes
     }
 
     /// <summary>
-    /// Publie le besoin d'alarme de CE script puis calcule l'état global.
-    /// Étapes : (1) relire le Custom Data s'il a changé, (2) écrire
-    /// [Etat] Source=besoin seulement si la valeur change, (3) état global =
-    /// au moins une clé [Etat] vraie, (4) couleur = source active de plus haute
-    /// [Criticite], puis la première dans [Config] Priorite, puis dans [Etat].
+    /// Publie UNE alarme de ce script. Peut être appelée plusieurs fois par
+    /// exécution (une fois par alarme), puis Terminer() une seule fois.
+    /// Chaque clé n'est réécrite que si sa valeur change.
     /// </summary>
-    /// <param name="besoinPropre">Vrai si ce script demande l'alarme (déjà corrigé de l'ACK).</param>
-    public void Publier(bool besoinPropre)
+    /// <param name="source">Nom de l'alarme (clé de [Etat], [Criticite], [Detail]).</param>
+    /// <param name="besoin">Vrai si l'alarme est active (déjà corrigée de l'ACK).</param>
+    /// <param name="criticite">critique, majeur, normal ou mineur (peut changer d'une exécution à l'autre).</param>
+    /// <param name="detail">Texte court affiché à côté de l'alarme par la Centrale ("" = aucun).</param>
+    public void Publier(string source, bool besoin, string criticite, string detail)
     {
-        // ---- Mode autonome : pas de serveur -----------------------------------
-        if (serveur == null)
-        {
-            PasserEnModeAutonome(besoinPropre, "autonome (aucun bloc " + NOM_SERVEUR + ")");
-            return;
-        }
+        if (!cycleOuvert) OuvrirCycle();
 
-        // ---- (1) Relecture seulement si le texte a changé ---------------------
-        string texte = serveur.CustomData;
-        if (texte != dernierCustomDataLu)
+        int rang = TrouverRang(criticite);
+        if (besoin)
         {
-            dernierCustomDataLu = texte;
-            customDataValide = lecteurIni.TryParse(texte);
+            besoinLocal = true;
+            if (rang < rangLocal) rangLocal = rang;
         }
-        if (!customDataValide)
-        {
-            PasserEnModeAutonome(besoinPropre, "Custom Data de " + NOM_SERVEUR + " illisible (format INI)");
-            return;
-        }
+        if (!connecte) return;
 
-        // ---- (2) Publication de notre état (écriture seulement si changement) -
-        bool modifie = false;
+        // [Etat] Source=true/false
         if (!lecteurIni.ContainsKey(SECTION_ETAT, source)
-            || lecteurIni.Get(SECTION_ETAT, source).ToBoolean(false) != besoinPropre)
+            || lecteurIni.Get(SECTION_ETAT, source).ToBoolean(false) != besoin)
         {
-            lecteurIni.Set(SECTION_ETAT, source, besoinPropre);
+            lecteurIni.Set(SECTION_ETAT, source, besoin);
             modifie = true;
         }
-        // Auto-enregistrement de notre couleur si le joueur ne l'a pas définie :
-        // ainsi les autres scripts connaissent notre couleur.
-        if (!lecteurIni.ContainsKey(SECTION_COULEURS, source))
+
+        // [Criticite] Source=niveau : c'est le script qui décide (le niveau peut monter).
+        string niveau = LIBELLES_CRITICITE[rang].ToLower();
+        if (lecteurIni.Get(SECTION_CRITICITE, source).ToString("") != niveau)
         {
-            lecteurIni.Set(SECTION_COULEURS, source, couleurPropre.R + "," + couleurPropre.G + "," + couleurPropre.B);
+            lecteurIni.Set(SECTION_CRITICITE, source, niveau);
             modifie = true;
         }
+
+        // [Detail] Source=texte (clé supprimée quand il n'y a rien à dire).
+        string texteDetail = detail ?? "";
+        if (texteDetail.Length == 0)
+        {
+            if (lecteurIni.ContainsKey(SECTION_DETAIL, source))
+            {
+                lecteurIni.Delete(SECTION_DETAIL, source);
+                modifie = true;
+            }
+        }
+        else if (lecteurIni.Get(SECTION_DETAIL, source).ToString("") != texteDetail)
+        {
+            lecteurIni.Set(SECTION_DETAIL, source, texteDetail);
+            modifie = true;
+        }
+    }
+
+    /// <summary>
+    /// Termine l'exécution : réécrit le Custom Data si une alarme a changé, puis
+    /// calcule l'état global (au moins une clé [Etat] vraie) et la couleur (celle
+    /// du niveau le plus grave parmi les sources actives).
+    /// </summary>
+    public void Terminer()
+    {
+        if (!cycleOuvert) OuvrirCycle();
+        cycleOuvert = false;
+
+        // ---- Mode autonome : seulement les alarmes de ce script ---------------
+        if (!connecte)
+        {
+            int rang = besoinLocal ? rangLocal : RANG_CRITICITE_DEFAUT;
+            AlarmeGlobale = besoinLocal;
+            CouleurGlobale = COULEURS_PAR_DEFAUT[rang];
+            NiveauDominant = besoinLocal ? LIBELLES_CRITICITE[rang] : "";
+            return;
+        }
+
+        // ---- Écriture (une seule fois pour toutes les alarmes du script) ------
         if (modifie)
         {
             string nouveauTexte = lecteurIni.ToString();
@@ -694,47 +735,64 @@ public class BusAlarmes
             dernierCustomDataLu = nouveauTexte;
         }
 
-        // ---- (3) État global : au moins une source active ---------------------
+        // ---- État global et niveau le plus grave ------------------------------
+        // Plusieurs sources peuvent avoir le même niveau : elles donnent la même
+        // couleur, l'ordre entre elles ne compte donc pas ici.
         AlarmeGlobale = false;
-        SourceDominante = "";
-        CouleurGlobale = couleurPropre;
+        int meilleurRang = int.MaxValue;
         clesEtat.Clear();
         lecteurIni.GetKeys(SECTION_ETAT, clesEtat);
         foreach (MyIniKey cle in clesEtat)
         {
-            if (lecteurIni.Get(SECTION_ETAT, cle.Name).ToBoolean(false))
-            {
-                AlarmeGlobale = true;
-                break;
-            }
+            if (!lecteurIni.Get(SECTION_ETAT, cle.Name).ToBoolean(false)) continue;
+            AlarmeGlobale = true;
+            int rang = TrouverRang(lecteurIni.Get(SECTION_CRITICITE, cle.Name).ToString(""));
+            if (rang < meilleurRang) meilleurRang = rang;
         }
 
-        // ---- (4) Source dominante : criticité, puis priorité ------------------
-        // Règle commune avec la Centrale d'Alarmes : la criticité la plus haute
-        // l'emporte ([Criticite], "normal" si absente) ; à égalité, l'ordre de
-        // [Config] Priorite ; à égalité encore, l'ordre des clés de [Etat].
         if (AlarmeGlobale)
         {
-            string[] ordrePriorite = lecteurIni.Get(SECTION_CONFIG, CLE_PRIORITE).ToString("").Split(',');
-            int meilleurRang = int.MaxValue;
-            int meilleurOrdre = int.MaxValue;
-            foreach (MyIniKey cle in clesEtat)
-            {
-                if (!lecteurIni.Get(SECTION_ETAT, cle.Name).ToBoolean(false)) continue;
-                int rang = RangCriticite(cle.Name);
-                int ordre = PositionDansPriorite(ordrePriorite, cle.Name);
-                // Comparaison stricte : à égalité complète, la première clé de [Etat] reste.
-                if (rang < meilleurRang || (rang == meilleurRang && ordre < meilleurOrdre))
-                {
-                    meilleurRang = rang;
-                    meilleurOrdre = ordre;
-                    SourceDominante = cle.Name;
-                }
-            }
-            CouleurGlobale = LireCouleur(SourceDominante);
+            NiveauDominant = LIBELLES_CRITICITE[meilleurRang];
+            CouleurGlobale = LireCouleurNiveau(meilleurRang);
+        }
+        else
+        {
+            NiveauDominant = "";
         }
 
-        Diagnostic = "connecté, alarme globale " + (AlarmeGlobale ? "ACTIVE (" + SourceDominante + ")" : "inactive");
+        Diagnostic = "connecté, alarme globale " + (AlarmeGlobale ? "ACTIVE (" + NiveauDominant + ")" : "inactive");
+    }
+
+    /// <summary>
+    /// Début d'exécution : relit le Custom Data du serveur s'il a changé.
+    /// Sans serveur, ou si son Custom Data est illisible : mode autonome.
+    /// </summary>
+    void OuvrirCycle()
+    {
+        cycleOuvert = true;
+        connecte = false;
+        modifie = false;
+        besoinLocal = false;
+        rangLocal = int.MaxValue;
+
+        if (serveur == null)
+        {
+            Diagnostic = "autonome (aucun bloc " + NOM_SERVEUR + ")";
+            return;
+        }
+
+        string texte = serveur.CustomData;
+        if (texte != dernierCustomDataLu)
+        {
+            dernierCustomDataLu = texte;
+            customDataValide = lecteurIni.TryParse(texte);
+        }
+        if (!customDataValide)
+        {
+            Diagnostic = "Custom Data de " + NOM_SERVEUR + " illisible (format INI)";
+            return;
+        }
+        connecte = true;
     }
 
     /// <summary>
@@ -775,59 +833,48 @@ public class BusAlarmes
         etatApplique = AlarmeGlobale;
     }
 
-    /// <summary>Mode sans serveur : l'état global est simplement notre besoin propre.</summary>
-    void PasserEnModeAutonome(bool besoinPropre, string message)
-    {
-        AlarmeGlobale = besoinPropre;
-        CouleurGlobale = couleurPropre;
-        SourceDominante = besoinPropre ? source : "";
-        Diagnostic = message;
-    }
-
     /// <summary>
-    /// Lit la couleur "R,G,B" d'une source dans [Couleurs].
-    /// Renvoie la couleur propre du script si la clé est absente ou mal écrite.
-    /// </summary>
-    Color LireCouleur(string nomSource)
-    {
-        string texte = lecteurIni.Get(SECTION_COULEURS, nomSource).ToString("");
-        string[] morceaux = texte.Split(',');
-        if (morceaux.Length != 3) return couleurPropre;
-
-        int rouge, vert, bleu;
-        if (!int.TryParse(morceaux[0].Trim(), out rouge)) return couleurPropre;
-        if (!int.TryParse(morceaux[1].Trim(), out vert)) return couleurPropre;
-        if (!int.TryParse(morceaux[2].Trim(), out bleu)) return couleurPropre;
-
-        return new Color(Borner(rouge), Borner(vert), Borner(bleu));
-    }
-
-    /// <summary>
-    /// Rang de criticité d'une source lu dans [Criticite] : 0 = critique,
+    /// Rang d'un niveau de criticité écrit en toutes lettres : 0 = critique,
     /// 1 = majeur, 2 = normal, 3 = mineur (anciens noms importante / normale /
-    /// basse acceptés). Absente ou inconnue : normal.
+    /// basse acceptés). Vide ou inconnu : normal.
     /// </summary>
-    int RangCriticite(string nomSource)
+    public static int TrouverRang(string niveau)
     {
-        string niveau = lecteurIni.Get(SECTION_CRITICITE, nomSource).ToString("").Trim();
+        string mot = (niveau ?? "").Trim();
         for (int rang = 0; rang < NIVEAUX_CRITICITE.Length; rang++)
         {
-            foreach (string mot in NIVEAUX_CRITICITE[rang])
+            foreach (string accepte in NIVEAUX_CRITICITE[rang])
             {
-                if (string.Equals(niveau, mot, StringComparison.OrdinalIgnoreCase)) return rang;
+                if (string.Equals(mot, accepte, StringComparison.OrdinalIgnoreCase)) return rang;
             }
         }
         return RANG_CRITICITE_DEFAUT;
     }
 
-    /// <summary>Position d'une source dans [Config] Priorite (int.MaxValue si absente).</summary>
-    static int PositionDansPriorite(string[] ordrePriorite, string nomSource)
+    /// <summary>Nom d'un niveau à partir de son rang (0 = "Critique" ... 3 = "Mineur").</summary>
+    public static string LibelleNiveau(int rang)
     {
-        for (int i = 0; i < ordrePriorite.Length; i++)
-        {
-            if (string.Equals(ordrePriorite[i].Trim(), nomSource, StringComparison.OrdinalIgnoreCase)) return i;
-        }
-        return int.MaxValue;
+        return LIBELLES_CRITICITE[rang];
+    }
+
+    /// <summary>
+    /// Lit la couleur "R,G,B" d'un niveau dans [Couleurs] (clé Critique, Majeur,
+    /// Normal ou Mineur). Renvoie la couleur par défaut du niveau si la clé est
+    /// absente ou mal écrite.
+    /// </summary>
+    Color LireCouleurNiveau(int rang)
+    {
+        Color parDefaut = COULEURS_PAR_DEFAUT[rang];
+        string texte = lecteurIni.Get(SECTION_COULEURS, LIBELLES_CRITICITE[rang]).ToString("");
+        string[] morceaux = texte.Split(',');
+        if (morceaux.Length != 3) return parDefaut;
+
+        int rouge, vert, bleu;
+        if (!int.TryParse(morceaux[0].Trim(), out rouge)) return parDefaut;
+        if (!int.TryParse(morceaux[1].Trim(), out vert)) return parDefaut;
+        if (!int.TryParse(morceaux[2].Trim(), out bleu)) return parDefaut;
+
+        return new Color(Borner(rouge), Borner(vert), Borner(bleu));
     }
 
     /// <summary>Ramène une composante de couleur dans l'intervalle 0..255.</summary>
