@@ -1,14 +1,18 @@
 ---
-tags: [space-engineers, data-center, configuration, optimise]
+tags:
+  - space-engineers
+  - data-center
+  - configuration
+  - optimise
 fichier: SERVEUR_DICTIONNAIRE.ini
-original: "[[guide_du_tri_automatique_et_data_center_se]]"
+original: "[[_old/Scripte/guide_du_tri_automatique_et_data_center_se|guide_du_tri_automatique_et_data_center_se]]"
 ---
 # Serveur Dictionnaire
 
 > [!summary] Résumé
 > Un seul bloc, nommé `SERVEUR_DICTIONNAIRE`, contient dans son **Custom Data** toutes les traductions du Data Center : alias de catégories (`minerai` → `ore`), alias d'objets (`fer` → `Iron`) et noms affichés sur les écrans (`Iron` → `Fer`). Les scripts le relisent automatiquement dès que vous le modifiez : plus besoin de toucher au code.
 
-Notes d'origine : [[guide_du_tri_automatique_et_data_center_se]] (ancienne section `[Dictionnaire]`) et [[Gestion de l'Affichage et Traductions]] (ancienne section `[Affichage]`).
+Notes d'origine : [[_old/Scripte/guide_du_tri_automatique_et_data_center_se|guide_du_tri_automatique_et_data_center_se]] (ancienne section `[Dictionnaire]`) et [[_old/Scripte/Gestion de l'Affichage et Traductions|Gestion de l'Affichage et Traductions]] (ancienne section `[Affichage]`).
 
 ---
 
@@ -43,6 +47,7 @@ ore=minerai, minerais
 | `oxygencontainerobject` | Bouteilles d'oxygène | bouteille o2, bouteille oxygene |
 | `gascontainerobject` | Bouteilles d'hydrogène | bouteille h2, bouteille hydrogene |
 | `consumableitem` | Consommables (kits, boissons…) | consommable, consommables |
+| `gasproperties` | Gaz des réservoirs (`Oxygen`, `Hydrogen`) | gaz, gas |
 
 > [!warning] Correction de l'ancien dictionnaire
 > L'ancienne ligne `ammo=Ammo` était **invalide** : `Ammo` n'est pas un objet du jeu. Les munitions forment une **catégorie** (`ammomagazine`). `ammo`, `munition` et `munitions` sont donc désormais des alias de catégorie : `{munitions}[*]`.
@@ -113,6 +118,7 @@ Les scripts mémorisent le dernier texte lu et le comparent à chaque exécution
 |---|---|---|
 | `BulletproofGlass`, `Explosives`, `Canvas`, `ZoneChip` | `[Alias]`, `[Affichage]` | Composants vanilla absents de l'ancien dictionnaire |
 | `OxygenBottle`, `HydrogenBottle`, `NATO_25x184mm`, `Missile200mm` | `[Alias]`, `[Affichage]` | Bouteilles et munitions vanilla courantes |
+| `gasproperties`, `Oxygen`, `Hydrogen` | `[Categories]`, `[Alias]`, `[Affichage]` | Les gaz eux-mêmes (contenu des réservoirs), distincts des bouteilles |
 | Traductions de **tous** les minerais, lingots et composants | `[Affichage]` | L'ancienne section n'en traduisait que 6 |
 | `Ore_Stone`, `Ingot_Stone`, `Ore_Ice`, `Ore_Scrap`, `Ingot_Scrap` | `[Affichage]` | Distinguer pierre / gravier, ferraille / vieille ferraille |
 | `ammo=Ammo` → `ammomagazine=…, ammo` | `[Categories]` | Correction : `Ammo` n'est pas un `SubtypeId` |
@@ -145,6 +151,8 @@ physicalgunobject=outil, outils, arme, armes
 oxygencontainerobject=bouteille o2, bouteille oxygene
 gascontainerobject=bouteille h2, bouteille hydrogene
 consumableitem=consommable, consommables
+; Gaz stockes dans les reservoirs (MyObjectBuilder_GasProperties/Oxygen, /Hydrogen)
+gasproperties=gaz, gas
 
 [Alias]
 ; SubtypeId=alias1, alias2, ...
@@ -200,6 +208,10 @@ GravityGenerator=composant de gravite, composant de gravité, gravity, gravité,
 ; --- Bouteilles ---
 OxygenBottle=bouteille d'oxygene, bouteille d'oxygène
 HydrogenBottle=bouteille d'hydrogene, bouteille d'hydrogène
+
+; --- Gaz (categorie gasproperties, contenu des reservoirs) ---
+Oxygen=oxygene, oxygène, o2, oxygen
+Hydrogen=hydrogene, hydrogène, h2, hydrogen
 
 ; --- Munitions (categorie ammomagazine) ---
 NATO_25x184mm=gatling, munition gatling
@@ -259,6 +271,10 @@ GravityGenerator=Composant de gravité
 OxygenBottle=Bouteille d'oxygène
 HydrogenBottle=Bouteille d'hydrogène
 
+; --- Gaz ---
+Oxygen=O2
+Hydrogen=H2
+
 ; --- Munitions ---
 NATO_25x184mm=Munitions Gatling
 Missile200mm=Missiles 200 mm
@@ -269,4 +285,4 @@ Missile200mm=Missiles 200 mm
 - [[Tri Automatique des Inventaires]] — utilise `[Categories]` et `[Alias]`
 - [[Affichage Data Center]] — utilise `[Affichage]`
 - [[00 - Conventions et Playbook IA]]
-- Notes d'origine : [[guide_du_tri_automatique_et_data_center_se]], [[Gestion de l'Affichage et Traductions]]
+- Notes d'origine : [[_old/Scripte/guide_du_tri_automatique_et_data_center_se|guide_du_tri_automatique_et_data_center_se]], [[_old/Scripte/Gestion de l'Affichage et Traductions|Gestion de l'Affichage et Traductions]]

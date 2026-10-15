@@ -1,7 +1,7 @@
 ---
 tags: [space-engineers, script, optimise]
 script: ControleAvaries.cs
-original: "[[Controle_Avaries_SE]]"
+original: "[[_old/Scripte/Controle_Avaries_SE|Controle_Avaries_SE]]"
 ---
 # Contrôle des Avaries & Alarmes (optimisé)
 
@@ -1091,7 +1091,7 @@ public class EcransRole
 
 ## Voir aussi
 
-- [[Controle_Avaries_SE]] — note d'origine
+- [[_old/Scripte/Controle_Avaries_SE|Controle_Avaries_SE]] — note d'origine
 - [[Bus d'Alarmes]] — partage des gyrophares entre scripts
 - [[Surveillance Carburant Uranium]] — l'autre source d'alarme
 - [[Diagnostic Structurel par Projecteur]] — surveillance de l'armure

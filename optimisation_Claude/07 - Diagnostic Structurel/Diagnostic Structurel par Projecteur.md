@@ -1,13 +1,13 @@
 ---
 tags: [space-engineers, script, optimise]
 script: DiagnosticStructurel.cs
-original: "[[Le Scanner de Brèches]]"
+original: "[[_old/Scripte/Le Scanner de Brèches|Le Scanner de Brèches]]"
 ---
 # Diagnostic Structurel par Projecteur
 
 > [!summary] Résumé
 > Un Bloc Programmable lit les compteurs d'un ou plusieurs **projecteurs** contenant le plan (Blueprint) du vaisseau intact pour savoir combien de blocs ont été **totalement détruits**. Il affiche un pourcentage d'intégrité, une barre de progression et des conseils de dépannage, en exécution manuelle (comme l'original) ou en surveillance automatique légère.
-> Fusion optimisée de [[Le Scanner de Brèches]] (version pédagogique) et de [[Script Space Engineers Diagnostic Structurel]] (version condensée).
+> Fusion optimisée de [[_old/Scripte/Le Scanner de Brèches|Le Scanner de Brèches]] (version pédagogique) et de [[_old/Scripte/Script Space Engineers Diagnostic Structurel|Script Space Engineers Diagnostic Structurel]] (version condensée).
 
 ## Pourquoi un projecteur ?
 
@@ -816,5 +816,5 @@ string FormaterDuree(double secondes)
 
 ## Voir aussi
 
-- [[Le Scanner de Brèches]] — note d'origine (version pédagogique)
-- [[Script Space Engineers Diagnostic Structurel]] — note d'origine (version condensée)
+- [[_old/Scripte/Le Scanner de Brèches|Le Scanner de Brèches]] — note d'origine (version pédagogique)
+- [[_old/Scripte/Script Space Engineers Diagnostic Structurel|Script Space Engineers Diagnostic Structurel]] — note d'origine (version condensée)

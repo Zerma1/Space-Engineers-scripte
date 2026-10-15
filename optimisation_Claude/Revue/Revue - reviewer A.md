@@ -8,7 +8,7 @@ tags: [space-engineers, revue]
 > - `03 - Affichage Data Center/AffichageDataCenter.cs` (1 122 lignes, 46 507 caractères)
 > - `01 - Serveur Dictionnaire/SERVEUR_DICTIONNAIRE.ini` (cohérence avec le parsing des deux scripts)
 >
-> Références : [[00 - Conventions et Playbook IA]], originaux `../../.old`, `Scripte/Gestion de l'Affichage et Traductions.md`, `../../.old` (tri), `../../.old` (affichage).
+> Références : [[00 - Conventions et Playbook IA]], originaux `../../_old/Scripte`, `../../_old/Scripte/Gestion de l'Affichage et Traductions.md`, `../../_old/gemini-code-1791364758252.cs` (tri), `../../_old/gemini-code-1791364773398.cs` (affichage).
 >
 > Aucun fichier existant n'a été modifié.
 
@@ -151,7 +151,7 @@ tags: [space-engineers, revue]
 ### m5 - Mineur - Calcul sans écran actif
 
 - **Fichier** : `AffichageDataCenter.cs`, lignes 297-311
-- **Problème** : la collecte, la construction des lignes, le gaz et l'énergie tournent même si `ecrans` est vide ou si aucun écran n'est actif. L'original sortait tout de suite (`../../.old` l. 91 : `if (ecransConfigures.Count == 0) return;`).
+- **Problème** : la collecte, la construction des lignes, le gaz et l'énergie tournent même si `ecrans` est vide ou si aucun écran n'est actif. L'original sortait tout de suite (`../../_old/gemini-code-1791364773398.cs` l. 91 : `if (ecransConfigures.Count == 0) return;`).
 - **Preuve** : aucune condition avant `CollecterInventairesParLot()`, `MettreAJourGaz()` et `MettreAJourEnergie()`.
 - **Risque** : un PB installé sans écran configuré consomme quand même du CPU. C'est une petite régression de performance par rapport à l'original.
 - **Recommandation** : si aucun écran n'est actif (et sans rescan demandé), ne faire que le résumé `Echo`. Ne calculer le gaz et l'énergie que si au moins un écran a `AfficherGaz` ou `AfficherEnergie`.
@@ -207,7 +207,7 @@ tags: [space-engineers, revue]
 ### i1 - Info - Périmètre des sources réduit (régression volontaire)
 
 - **Fichier** : `TriInventaire.cs`, lignes 480-513
-- **Fait** : l'original (`../../.old` l. 61, 176-203) parcourait **tous** les blocs du réseau (`GetBlocks`), y compris les grilles amarrées, et **tous** leurs inventaires (`i < InventoryCount`). La nouvelle version ne vide plus les réacteurs, les générateurs O2/H2, les tourelles, les cockpits, les soudeuses, l'entrée des raffineries et assembleurs, ni les grilles amarrées. Elle ajoute en revanche les connecteurs comme destinations.
+- **Fait** : l'original (`../../_old/gemini-code-1791364758252.cs` l. 61, 176-203) parcourait **tous** les blocs du réseau (`GetBlocks`), y compris les grilles amarrées, et **tous** leurs inventaires (`i < InventoryCount`). La nouvelle version ne vide plus les réacteurs, les générateurs O2/H2, les tourelles, les cockpits, les soudeuses, l'entrée des raffineries et assembleurs, ni les grilles amarrées. Elle ajoute en revanche les connecteurs comme destinations.
 - **Commentaire** : c'est une amélioration (l'original affamait les raffineries et les réacteurs), documentée en tête de fichier. Mais c'est une perte de fonctionnalité pour qui comptait sur le vidage d'un vaisseau amarré : il faut le signaler dans la note.
 
 ### i2 - Info - Changements de comportement de l'affichage

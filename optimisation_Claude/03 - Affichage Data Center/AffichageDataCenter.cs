@@ -675,8 +675,12 @@ bool MettreAJourGaz()
 
     tamponLignes.Clear();
     tamponLignes.Add("--- RÉSERVES DE GAZ ---");
-    if (capaciteO2 > 0) tamponLignes.Add($"Oxygène : {100.0 * volumeO2 / capaciteO2:0.0}% ({volumeO2:N0} L)");
-    if (capaciteH2 > 0) tamponLignes.Add($"Hydrogène : {100.0 * volumeH2 / capaciteH2:0.0}% ({volumeH2:N0} L)");
+    // Libellés pris dans [Affichage] du serveur (Oxygen=..., Hydrogen=...), O2 / H2 sinon.
+    string nomO2, nomH2;
+    if (!dicoAffichage.TryGetValue("Oxygen", out nomO2)) nomO2 = "O2";
+    if (!dicoAffichage.TryGetValue("Hydrogen", out nomH2)) nomH2 = "H2";
+    if (capaciteO2 > 0) tamponLignes.Add($"{nomO2} : {100.0 * volumeO2 / capaciteO2:0.0}% ({volumeO2:N0} L)");
+    if (capaciteH2 > 0) tamponLignes.Add($"{nomH2} : {100.0 * volumeH2 / capaciteH2:0.0}% ({volumeH2:N0} L)");
     if (capaciteO2 <= 0 && capaciteH2 <= 0) tamponLignes.Add("Aucun réservoir.");
     tamponLignes.Add("");
 

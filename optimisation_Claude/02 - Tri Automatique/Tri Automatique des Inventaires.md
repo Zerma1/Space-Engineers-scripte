@@ -1,7 +1,7 @@
 ---
 tags: [space-engineers, script, optimise]
 script: TriInventaire.cs
-original: "[[guide_du_tri_automatique_et_data_center_se]]"
+original: "[[_old/Scripte/guide_du_tri_automatique_et_data_center_se|guide_du_tri_automatique_et_data_center_se]]"
 ---
 # Tri Automatique des Inventaires
 
@@ -1056,4 +1056,4 @@ void AfficherResume()
 - [[Serveur Dictionnaire]] — format `[Categories]`, `[Alias]`, `[Affichage]`
 - [[Affichage Data Center]] — écrans de stock qui partagent le même dictionnaire
 - [[00 - Conventions et Playbook IA]]
-- Note d'origine : [[guide_du_tri_automatique_et_data_center_se]]
+- Note d'origine : [[_old/Scripte/guide_du_tri_automatique_et_data_center_se|guide_du_tri_automatique_et_data_center_se]]

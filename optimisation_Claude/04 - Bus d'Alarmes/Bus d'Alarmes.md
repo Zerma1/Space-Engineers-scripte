@@ -1,7 +1,7 @@
 ---
 tags: [space-engineers, script, optimise, alarmes]
 script: SERVEUR_ALARMES.ini
-original: "[[Gestionnaire de Carburant]]"
+original: "[[_old/Scripte/Gestionnaire de Carburant|Gestionnaire de Carburant]]"
 ---
 # Bus d'Alarmes (SERVEUR_ALARMES)
 
@@ -10,7 +10,7 @@ original: "[[Gestionnaire de Carburant]]"
 
 ## 1. Le problème d'origine
 
-La note [[Gestionnaire de Carburant]] le signalait elle-même dans sa « note technique pour le futur » :
+La note [[_old/Scripte/Gestionnaire de Carburant|Gestionnaire de Carburant]] le signalait elle-même dans sa « note technique pour le futur » :
 
 > [!warning] Deux scripts, mêmes gyrophares
 > Le script de dégâts dit « éteins-toi, il n'y a pas de dégâts » pendant que le script d'uranium dit « allume-toi en vert ». Chaque script écrase la décision de l'autre à chacune de ses exécutions (~1,6 s) : les gyrophares clignotent, changent de couleur au hasard, ou restent éteints alors qu'une alerte est en cours.
@@ -405,5 +405,5 @@ public class BusAlarmes
 
 - [[Controle des Avaries]] — source `Avaries`, groupe `ALARMES_CRITIQUES`
 - [[Surveillance Carburant Uranium]] — source `Carburant`, groupe `ALARMES_URANIUM`
-- [[Gestionnaire de Carburant]] — note d'origine (« note technique pour le futur »)
-- [[Controle_Avaries_SE]] — note d'origine du contrôle des avaries
+- [[_old/Scripte/Gestionnaire de Carburant|Gestionnaire de Carburant]] — note d'origine (« note technique pour le futur »)
+- [[_old/Scripte/Controle_Avaries_SE|Controle_Avaries_SE]] — note d'origine du contrôle des avaries

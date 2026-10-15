@@ -1,7 +1,7 @@
 ---
 tags: [space-engineers, script, optimise]
 script: GestionnaireCarburant.cs
-original: "[[Gestionnaire de Carburant]]"
+original: "[[_old/Scripte/Gestionnaire de Carburant|Gestionnaire de Carburant]]"
 ---
 # Surveillance Carburant Uranium (optimisé)
 
@@ -985,6 +985,6 @@ public class EcransRole
 
 ## Voir aussi
 
-- [[Gestionnaire de Carburant]] — note d'origine
+- [[_old/Scripte/Gestionnaire de Carburant|Gestionnaire de Carburant]] — note d'origine
 - [[Bus d'Alarmes]] — partage des gyrophares entre scripts
 - [[Controle des Avaries]] — l'autre source d'alarme

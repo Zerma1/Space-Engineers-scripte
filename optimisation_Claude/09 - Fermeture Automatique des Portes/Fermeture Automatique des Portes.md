@@ -1,7 +1,7 @@
 ---
 tags: [space-engineers, script, optimise]
 script: FermeturePortes.cs
-original: "[[fermeture des porte]]"
+original: "[[_old/Scripte/fermeture des porte|fermeture des porte]]"
 ---
 # Fermeture Automatique des Portes
 
@@ -483,6 +483,6 @@ void AfficherConsole()
 
 ## Voir aussi
 
-- [[fermeture des porte]] — note d'origine
+- [[_old/Scripte/fermeture des porte|fermeture des porte]] — note d'origine
 - [[Sas Automatique (Airlock)]] — gestion des sas (ses portes `[SAS-` sont ignorées ici)
-- [[Gestionnaire de Sas (Airlock) Intelligent]] — version d'origine du gestionnaire de sas
+- [[_old/Scripte/Gestionnaire de Sas (Airlock) Intelligent|Gestionnaire de Sas (Airlock) Intelligent]] — version d'origine du gestionnaire de sas

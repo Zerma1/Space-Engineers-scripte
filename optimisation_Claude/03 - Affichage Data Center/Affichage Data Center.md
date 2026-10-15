@@ -1,7 +1,7 @@
 ---
 tags: [space-engineers, script, optimise]
 script: AffichageDataCenter.cs
-original: "[[Gestion de l'Affichage et Traductions]]"
+original: "[[_old/Scripte/Gestion de l'Affichage et Traductions|Gestion de l'Affichage et Traductions]]"
 ---
 # Affichage Data Center
 
@@ -177,7 +177,7 @@ Pour lier la commande à un bouton : posez un **panneau de boutons** (ou utilise
 4. **Dictionnaire** : le Custom Data du `SERVEUR_DICTIONNAIRE` est comparé à la dernière version lue, et il n'est réanalysé que s'il a changé. Le script en tire trois tables : alias de catégories, alias d'objets et noms affichés.
 5. **Collecte par lots** : à chaque exécution, le script lit au plus 150 blocs à inventaire (et s'arrête aussi si la moitié du budget d'instructions est consommée). Les quantités sont additionnées par type d'objet. Quand tous les blocs ont été lus, le cycle est terminé : le nouveau total remplace l'ancien, mais seulement s'il est différent. Cette collecte est faite **une seule fois pour tous les écrans**.
 6. **Lignes de stock** : quand le stock ou le dictionnaire change, chaque type d'objet devient une ligne traduite et formatée une seule fois (`Fer : 15,000`). Les lignes sont triées par catégorie (minerais, lingots, composants...) puis par nom affiché.
-7. **Gaz et énergie** : ces blocs sont peu nombreux, donc ils sont recalculés à chaque exécution. Un réservoir est compté comme hydrogène si son SubtypeId contient « Hydrogen », sinon comme oxygène. L'énergie affiche la charge des batteries, leur entrée et leur sortie, puis la production actuelle sur la production maximale pour chaque source présente, et enfin le total.
+7. **Gaz et énergie** : ces blocs sont peu nombreux, donc ils sont recalculés à chaque exécution. Un réservoir est compté comme hydrogène si son SubtypeId contient « Hydrogen », sinon comme oxygène. Les libellés viennent des clés `Oxygen` et `Hydrogen` de la section `[Affichage]` du serveur (`O2` et `H2` par défaut). L'énergie affiche la charge des batteries, leur entrée et leur sortie, puis la production actuelle sur la production maximale pour chaque source présente, et enfin le total.
 8. **Écrans** : pour chaque écran candidat :
    - si son Custom Data a changé, la section `[Ecran]` est relue et validée. L'écran est ignoré si `Role` désigne un autre script ou si la surface n'existe pas ;
    - si les données ont changé, la liste complète des lignes de l'écran est reconstruite : gaz, énergie, puis stocks filtrés, avec des en-têtes de catégorie quand il y en a plusieurs ;
@@ -940,8 +940,12 @@ bool MettreAJourGaz()
 
     tamponLignes.Clear();
     tamponLignes.Add("--- RÉSERVES DE GAZ ---");
-    if (capaciteO2 > 0) tamponLignes.Add($"Oxygène : {100.0 * volumeO2 / capaciteO2:0.0}% ({volumeO2:N0} L)");
-    if (capaciteH2 > 0) tamponLignes.Add($"Hydrogène : {100.0 * volumeH2 / capaciteH2:0.0}% ({volumeH2:N0} L)");
+    // Libellés pris dans [Affichage] du serveur (Oxygen=..., Hydrogen=...), O2 / H2 sinon.
+    string nomO2, nomH2;
+    if (!dicoAffichage.TryGetValue("Oxygen", out nomO2)) nomO2 = "O2";
+    if (!dicoAffichage.TryGetValue("Hydrogen", out nomH2)) nomH2 = "H2";
+    if (capaciteO2 > 0) tamponLignes.Add($"{nomO2} : {100.0 * volumeO2 / capaciteO2:0.0}% ({volumeO2:N0} L)");
+    if (capaciteH2 > 0) tamponLignes.Add($"{nomH2} : {100.0 * volumeH2 / capaciteH2:0.0}% ({volumeH2:N0} L)");
     if (capaciteO2 <= 0 && capaciteH2 <= 0) tamponLignes.Add("Aucun réservoir.");
     tamponLignes.Add("");
 
@@ -1392,5 +1396,5 @@ void AfficherResume(int nombreEcransActifs)
 
 ## Voir aussi
 
-- [[Gestion de l'Affichage et Traductions]] — note d'origine
+- [[_old/Scripte/Gestion de l'Affichage et Traductions|Gestion de l'Affichage et Traductions]] — note d'origine
 - [[Serveur Dictionnaire]] — format du dictionnaire partagé (catégories, alias, noms affichés)

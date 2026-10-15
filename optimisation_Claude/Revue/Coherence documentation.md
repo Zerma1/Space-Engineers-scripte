@@ -28,7 +28,7 @@ Retour au [[00 - Sommaire]].
 | [[Fermeture Automatique des Portes]] | `FermeturePortes.cs` | Quasi OK | 1 mineur (E-09a) + 1 précision |
 | Transversal | tous | Cosmétique | 1 (E-T1 : « ~1,6 s » / « ~1,7 s ») |
 
-**Liens Obsidian** : 21 cibles distinctes `[[...]]` + 2 ancres internes (`[[#9. Code complet]]`, `[[#4. Commandes]]` dans la note 07). **Aucun lien cassé** : toutes les cibles existent (notes de `optimisation_Claude` ou de `../../.old`), et les deux ancres correspondent à des titres existants.
+**Liens Obsidian** : 21 cibles distinctes `[[...]]` + 2 ancres internes (`[[#9. Code complet]]`, `[[#4. Commandes]]` dans la note 07). **Aucun lien cassé** : toutes les cibles existent (notes de `optimisation_Claude` ou de `../../_old/Scripte`), et les deux ancres correspondent à des titres existants.
 
 ### Contrôles transversaux (faits)
 

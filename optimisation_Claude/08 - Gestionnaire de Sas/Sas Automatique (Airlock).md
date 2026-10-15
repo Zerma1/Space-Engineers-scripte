@@ -1,7 +1,7 @@
 ---
 tags: [space-engineers, script, optimise]
 script: GestionnaireSas.cs
-original: "[[Gestionnaire de Sas (Airlock) Intelligent]]"
+original: "[[_old/Scripte/Gestionnaire de Sas (Airlock) Intelligent|Gestionnaire de Sas (Airlock) Intelligent]]"
 ---
 # Sas Automatique (Airlock)
 
@@ -144,9 +144,9 @@ Extérieure (espace) : VERROUILLÉE
 
 ## 6. Optimisations et corrections par rapport à l'original
 
-Colonne « Déjà dans `../../.old` » : **Oui** = correction reprise de la première optimisation ; **Non** = nouveauté de cette version.
+Colonne « Déjà dans `../../_old/Script_Airlock_Optimise.cs` » : **Oui** = correction reprise de la première optimisation ; **Non** = nouveauté de cette version.
 
-| Problème d'origine | Conséquence en jeu | Correction | Déjà dans `../../.old` |
+| Problème d'origine | Conséquence en jeu | Correction | Déjà dans `../../_old/Script_Airlock_Optimise.cs` |
 |---|---|---|---|
 | `GetBlocks` de **toute** la grille au scan | Scan lent sur une grosse base | `GetBlocksOfType` avec filtre (balise + construction) à la source | Oui |
 | Pas de filtre de construction | Pilote les sas d'un vaisseau amarré | `SEULEMENT_CETTE_CONSTRUCTION` / `IsSameConstructAs(Me)` | Oui |
@@ -1120,5 +1120,5 @@ void ScannerLesSas()
 
 ## Voir aussi
 
-- [[Gestionnaire de Sas (Airlock) Intelligent]] — note d'origine
+- [[_old/Scripte/Gestionnaire de Sas (Airlock) Intelligent|Gestionnaire de Sas (Airlock) Intelligent]] — note d'origine
 - [[Fermeture Automatique des Portes]] — fermeture automatique des autres portes (ignore les portes `[SAS-`)
