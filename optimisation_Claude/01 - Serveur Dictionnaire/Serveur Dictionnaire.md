@@ -5,7 +5,7 @@ tags:
   - configuration
   - optimise
 fichier: SERVEUR_DICTIONNAIRE.ini
-original: "[[_old/Scripte/guide_du_tri_automatique_et_data_center_se|guide_du_tri_automatique_et_data_center_se]]"
+original: "[[_old/Scripte/guide_du_tri_automatique_et_data_center_seclaude|guide_du_tri_automatique_et_data_center_se]]"
 ---
 # Serveur Dictionnaire
 
