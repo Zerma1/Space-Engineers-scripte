@@ -47,6 +47,8 @@ Retour au [[00 - Sommaire]].
 | `SERVEUR_ALARMES` | n'importe quel bloc (Custom Data), optionnel | [[Controle des Avaries]], [[Surveillance Carburant Uranium]] — voir [[Bus d'Alarmes]] |
 | Groupe `ALARMES_CRITIQUES` | gyrophares, lumières, blocs sonores | [[Controle des Avaries]] |
 | Groupe `ALARMES_URANIUM` | gyrophares, lumières, blocs sonores | [[Surveillance Carburant Uranium]] |
+| Groupe `ALARMES` | gyrophares, lumières, blocs sonores (filtre optionnel `[Alarme] Sources=`) | [[Centrale d'Alarmes]] |
+| `[alarme-line]`, `[alarme-quant]` (`:N` = surface) | écrans, dans le **nom** du bloc | [[Centrale d'Alarmes]] |
 | `PROJECTEUR_REPARATION`, `LCD_SCANNER` | projecteur, écran | [[Diagnostic Structurel par Projecteur]] |
 | `[SAS-Nom-int/ext/vent/lcd]` | portes, ventilations, écrans | [[Sas Automatique (Airlock)]] (ignorés par [[Fermeture Automatique des Portes]]) |
 | `{categorie}[liste]priorite` | conteneurs, connecteurs | [[Tri Automatique des Inventaires]] |
@@ -82,5 +84,5 @@ Surface=0
 1. Lire cette note, puis un script existant proche (ex. [[Controle des Avaries]]) comme modèle.
 2. Respecter le gabarit de note : frontmatter → résumé → Prérequis → Installation → Configuration → Commandes → Fonctionnement → Optimisations → Limites → Dépannage → Code complet → Voir aussi.
 3. Le bloc de code de la note doit être **identique** au fichier `.cs`.
-4. Si le script affiche : utiliser `[Ecran]` + un nouveau `Role`. S'il alarme : utiliser le [[Bus d'Alarmes]] avec une nouvelle source et la classe `BusAlarmes` copiée telle quelle.
+4. Si le script affiche : utiliser `[Ecran]` + un nouveau `Role`. S'il alarme : utiliser le [[Bus d'Alarmes]] avec une nouvelle source et la classe `BusAlarmes` copiée telle quelle, ajouter sa couleur et sa criticité dans `SERVEUR_ALARMES`, et laisser la [[Centrale d'Alarmes]] piloter les gyrophares.
 5. Ajouter le script au [[00 - Sommaire]].

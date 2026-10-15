@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "optimisation_Claude/02 - Tri Automatique/Tri Automatique des Inventaires.md",
+                "file": "optimisation_Claude/Revue/Revue - reviewer B.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Tri Automatique des Inventaires"
+              "title": "Revue - reviewer B"
             }
           }
         ]
@@ -188,17 +188,19 @@
   },
   "active": "7fff939cfea08ded",
   "lastOpenFiles": [
+    "optimisation_Claude/06 - Gestionnaire de Carburant/sedslNw3q",
+    "optimisation_Claude/06 - Gestionnaire de Carburant/sedtaLEQP",
+    "optimisation_Claude/05 - Controle des Avaries/sed0fdUp2",
+    "optimisation_Claude/05 - Controle des Avaries/sedQASvvP",
+    "optimisation_Claude/04 - Bus d'Alarmes/sedB00HOO",
+    "optimisation_Claude/Revue/Revue - reviewer A.md",
+    "optimisation_Claude/02 - Tri Automatique/Tri Automatique des Inventaires.md",
     "optimisation_Claude/Revue/bY4Pr8XD",
     "optimisation_Claude/Revue/dLae6kXE",
     "optimisation_Claude/Revue/1cHQqJCF",
     "optimisation_Claude/09 - Fermeture Automatique des Portes/kOvzrcdh",
     "optimisation_Claude/08 - Gestionnaire de Sas/PeZEXZMU",
     "optimisation_Claude/07 - Diagnostic Structurel/mFrGCthc",
-    "optimisation_Claude/06 - Gestionnaire de Carburant/UelPfFh9",
-    "optimisation_Claude/05 - Controle des Avaries/sWAcYqOU",
-    "optimisation_Claude/04 - Bus d'Alarmes/rTU5oK4P",
-    "optimisation_Claude/02 - Tri Automatique/Q1NCitB8",
-    "optimisation_Claude/01 - Serveur Dictionnaire/LkzqWUqh",
     "_old/Scripte/Script Space Engineers Diagnostic Structurel.md",
     "_old/Scripte/Le Scanner de Brèches.md",
     "_old/Scripte/guide_du_tri_automatique_et_data_center_se.md",
@@ -221,8 +223,6 @@
     "Scripte/Gestion de l'Affichage et Traductions.md",
     "Scripte/article_le_data_center_dans_space_engineers.md",
     "gemini-code-1791364724595.md",
-    "Scripte/Organisation inventaire.md",
-    "Scripte/tri_ utomatique.md",
-    "Bienvenue.md"
+    "Scripte/Organisation inventaire.md"
   ]
 }

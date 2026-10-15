@@ -15,7 +15,7 @@ original: "[[_old/Scripte/Gestionnaire de Carburant|Gestionnaire de Carburant]]"
 | Bloc programmable | n'importe quel nom ; contient ce script | oui |
 | Réacteur(s) | aucun nom imposé (détection automatique) | oui (sinon « Aucun réacteur détecté ») |
 | Conteneurs de cargaison | aucun nom imposé ; leur uranium compte comme stock | non |
-| Groupe d'alarme | groupe nommé **exactement** `ALARMES_URANIUM` (gyrophares, lumières, blocs sonores) | non (Echo le signale) |
+| Groupe d'alarme | groupe nommé **exactement** `ALARMES_URANIUM` (gyrophares, lumières, blocs sonores) | non (Echo le signale) ; inutile avec la [[Centrale d'Alarmes]], qui pilote le groupe `ALARMES` |
 | Écran(s) | Custom Data `[Ecran] Role=Carburant` | non (le rapport est toujours dans Echo) |
 | Bouton d'acquittement | panneau de boutons, action « Exécuter avec l'argument » → `ACK` | non |
 | Serveur d'alarmes | bloc nommé `SERVEUR_ALARMES` — voir [[Bus d'Alarmes]] | non |
@@ -168,7 +168,7 @@ stateDiagram-v2
 | Autonomie « INFINIE » | réacteurs éteints ou consommation nulle | normal à l'arrêt ; vérifier « Réacteurs à vérifier » |
 | L'alarme ne se réarme pas après le plein | autonomie entre 1 h et 1,5 h | normal (hystérésis) ; elle se réarme au-dessus de 1,5 h |
 | `ACK` sans effet | aucune alerte en cours | normal (Echo : « aucune alerte en cours ») |
-| Les gyrophares sont rouges pendant l'alerte carburant | les avaries sont aussi actives et prioritaires | voir `Priorite` dans [[Bus d'Alarmes]] |
+| Les gyrophares sont rouges pendant l'alerte carburant | les avaries sont aussi actives, et plus critiques | normal : voir `[Criticite]` dans [[Bus d'Alarmes]] ; la liste complète s'affiche sur un écran `[alarme-line]` de la [[Centrale d'Alarmes]] |
 | Uranium en stock = 0 alors qu'il y en a | stock hors conteneurs de cargaison, ou sur un vaisseau amarré | déplacer dans un conteneur de la construction |
 | Echo : `Surface=N invalide` | numéro de surface trop grand | utiliser un numéro entre 0 et (nombre de surfaces − 1) |
 
@@ -597,7 +597,7 @@ void AfficherEcho()
 /// QUOI : chaque script publie son propre besoin d'alarme (Source=true/false)
 /// dans la section [Etat] du Custom Data d'un bloc nommé SERVEUR_ALARMES, puis
 /// relit toutes les sources pour calculer UN état global (au moins une source
-/// active) et UNE couleur (première source active dans [Config] Priorite).
+/// active) et UNE couleur (source active la plus critique, puis [Config] Priorite).
 /// POURQUOI : sans ce bus, le script d'avaries éteignait les gyrophares que le
 /// script de carburant venait d'allumer (et inversement). Avec le bus, tous les
 /// scripts calculent exactement le même état : plus de conflit.
@@ -614,6 +614,18 @@ public class BusAlarmes
     const string SECTION_COULEURS = "Couleurs";
     const string SECTION_ETAT = "Etat";
     const string CLE_PRIORITE = "Priorite";
+    const string SECTION_CRITICITE = "Criticite";
+
+    // Niveaux de criticité, du plus grave au moins grave (l'index sert de rang).
+    // Plusieurs mots acceptés par niveau (les anciens noms restent valides).
+    static readonly string[][] NIVEAUX_CRITICITE =
+    {
+        new[] { "critique" },
+        new[] { "majeur", "majeure", "importante" },
+        new[] { "normal", "normale" },
+        new[] { "mineur", "mineure", "basse" }
+    };
+    const int RANG_CRITICITE_DEFAUT = 2;   // "normal"
 
     // Identité du script qui utilise ce bus (ex. "Avaries", "Carburant").
     readonly string source;
@@ -699,8 +711,8 @@ public class BusAlarmes
     /// Publie le besoin d'alarme de CE script puis calcule l'état global.
     /// Étapes : (1) relire le Custom Data s'il a changé, (2) écrire
     /// [Etat] Source=besoin seulement si la valeur change, (3) état global =
-    /// au moins une clé [Etat] vraie, (4) couleur = première source active de
-    /// [Config] Priorite, sinon première source active trouvée dans [Etat].
+    /// au moins une clé [Etat] vraie, (4) couleur = source active de plus haute
+    /// [Criticite], puis la première dans [Config] Priorite, puis dans [Etat].
     /// </summary>
     /// <param name="besoinPropre">Vrai si ce script demande l'alarme (déjà corrigé de l'ACK).</param>
     public void Publier(bool besoinPropre)
@@ -754,30 +766,35 @@ public class BusAlarmes
         CouleurGlobale = couleurPropre;
         clesEtat.Clear();
         lecteurIni.GetKeys(SECTION_ETAT, clesEtat);
-        string premiereSourceActive = "";
         foreach (MyIniKey cle in clesEtat)
         {
             if (lecteurIni.Get(SECTION_ETAT, cle.Name).ToBoolean(false))
             {
                 AlarmeGlobale = true;
-                premiereSourceActive = cle.Name;
                 break;
             }
         }
 
-        // ---- (4) Couleur : première source active selon la priorité -----------
+        // ---- (4) Source dominante : criticité, puis priorité ------------------
+        // Règle commune avec la Centrale d'Alarmes : la criticité la plus haute
+        // l'emporte ([Criticite], "normal" si absente) ; à égalité, l'ordre de
+        // [Config] Priorite ; à égalité encore, l'ordre des clés de [Etat].
         if (AlarmeGlobale)
         {
-            SourceDominante = premiereSourceActive;
-            string priorite = lecteurIni.Get(SECTION_CONFIG, CLE_PRIORITE).ToString("");
-            string[] sourcesOrdonnees = priorite.Split(',');
-            foreach (string nomBrut in sourcesOrdonnees)
+            string[] ordrePriorite = lecteurIni.Get(SECTION_CONFIG, CLE_PRIORITE).ToString("").Split(',');
+            int meilleurRang = int.MaxValue;
+            int meilleurOrdre = int.MaxValue;
+            foreach (MyIniKey cle in clesEtat)
             {
-                string nom = nomBrut.Trim();
-                if (nom.Length > 0 && lecteurIni.Get(SECTION_ETAT, nom).ToBoolean(false))
+                if (!lecteurIni.Get(SECTION_ETAT, cle.Name).ToBoolean(false)) continue;
+                int rang = RangCriticite(cle.Name);
+                int ordre = PositionDansPriorite(ordrePriorite, cle.Name);
+                // Comparaison stricte : à égalité complète, la première clé de [Etat] reste.
+                if (rang < meilleurRang || (rang == meilleurRang && ordre < meilleurOrdre))
                 {
-                    SourceDominante = nom;
-                    break;
+                    meilleurRang = rang;
+                    meilleurOrdre = ordre;
+                    SourceDominante = cle.Name;
                 }
             }
             CouleurGlobale = LireCouleur(SourceDominante);
@@ -849,6 +866,34 @@ public class BusAlarmes
         if (!int.TryParse(morceaux[2].Trim(), out bleu)) return couleurPropre;
 
         return new Color(Borner(rouge), Borner(vert), Borner(bleu));
+    }
+
+    /// <summary>
+    /// Rang de criticité d'une source lu dans [Criticite] : 0 = critique,
+    /// 1 = majeur, 2 = normal, 3 = mineur (anciens noms importante / normale /
+    /// basse acceptés). Absente ou inconnue : normal.
+    /// </summary>
+    int RangCriticite(string nomSource)
+    {
+        string niveau = lecteurIni.Get(SECTION_CRITICITE, nomSource).ToString("").Trim();
+        for (int rang = 0; rang < NIVEAUX_CRITICITE.Length; rang++)
+        {
+            foreach (string mot in NIVEAUX_CRITICITE[rang])
+            {
+                if (string.Equals(niveau, mot, StringComparison.OrdinalIgnoreCase)) return rang;
+            }
+        }
+        return RANG_CRITICITE_DEFAUT;
+    }
+
+    /// <summary>Position d'une source dans [Config] Priorite (int.MaxValue si absente).</summary>
+    static int PositionDansPriorite(string[] ordrePriorite, string nomSource)
+    {
+        for (int i = 0; i < ordrePriorite.Length; i++)
+        {
+            if (string.Equals(ordrePriorite[i].Trim(), nomSource, StringComparison.OrdinalIgnoreCase)) return i;
+        }
+        return int.MaxValue;
     }
 
     /// <summary>Ramène une composante de couleur dans l'intervalle 0..255.</summary>

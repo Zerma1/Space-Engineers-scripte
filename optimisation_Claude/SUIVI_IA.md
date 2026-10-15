@@ -23,6 +23,7 @@ Voir `.opencode/prompte/initial.md` : analyser les scripts et les `.md` existant
 | 07 - Diagnostic Structurel (.cs + .md) | ✅ fait |
 | 08 - Gestionnaire de Sas (.cs + .md) | ✅ fait |
 | 09 - Fermeture Automatique des Portes (.cs + .md) | ✅ fait |
+| 10 - Centrale d'Alarmes (.cs + .md) + criticité dans le bus (2026-10-15) | ✅ fait, non testé en jeu |
 | Vérif : code des `.md` identique aux `.cs` | ✅ vérifié |
 | 00 - Sommaire (référencé partout, manquant) | ✅ fait (session de reprise) |
 

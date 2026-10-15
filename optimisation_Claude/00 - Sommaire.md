@@ -25,6 +25,7 @@ Commencez par lire [[00 - Conventions et Playbook IA]] : noms de blocs réservé
 | [[Bus d'Alarmes]] | `SERVEUR_ALARMES.ini` | Tableau commun (optionnel) qui évite que deux scripts se disputent les gyrophares. |
 | [[Controle des Avaries]] | `ControleAvaries.cs` | Intégrité des blocs, rapport `Role=Avaries`, groupe `ALARMES_CRITIQUES`. |
 | [[Surveillance Carburant Uranium]] | `GestionnaireCarburant.cs` | Autonomie des réacteurs, `Role=Carburant`, groupe `ALARMES_URANIUM`. |
+| [[Centrale d'Alarmes]] | `CentraleAlarmes.cs` | Pilote unique des gyrophares (groupe `ALARMES`, couleur de l'alarme la plus grave) et écrans `[alarme-line]` / `[alarme-quant]`. |
 | [[Diagnostic Structurel par Projecteur]] | `DiagnosticStructurel.cs` | Blocs détruits détectés par comparaison avec un projecteur (`Role=Structure`). |
 
 ## Portes & sas
@@ -38,7 +39,7 @@ Commencez par lire [[00 - Conventions et Playbook IA]] : noms de blocs réservé
 
 ## Ordre d'installation conseillé
 
-1. Créer le bloc `SERVEUR_DICTIONNAIRE` (et `SERVEUR_ALARMES` si vous utilisez les deux scripts d'alarme).
+1. Créer le bloc `SERVEUR_DICTIONNAIRE` (et `SERVEUR_ALARMES` si vous utilisez la [[Centrale d'Alarmes]] ou plusieurs scripts d'alarme).
 2. Installer le [[Tri Automatique des Inventaires]], puis l'[[Affichage Data Center]].
 3. Ajouter les scripts de sécurité et de portes selon vos besoins : chacun tourne dans **son propre** Bloc Programmable.
 
