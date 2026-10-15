@@ -24,6 +24,8 @@ Voir `.opencode/prompte/initial.md` : analyser les scripts et les `.md` existant
 | 08 - Gestionnaire de Sas (.cs + .md) | ✅ fait |
 | 09 - Fermeture Automatique des Portes (.cs + .md) | ✅ fait |
 | 10 - Centrale d'Alarmes (.cs + .md) + criticité dans le bus (2026-10-15) | ✅ fait, non testé en jeu |
+| 06 - Surveillance énergie : H2, uranium, glace, batteries + alarme Energie à escalade ; BusAlarmes multi-alarmes avec [Detail] ; correction « réacteurs à sec = autonomie INFINIE » (2026-10-15) | ✅ fait, non testé en jeu |
+| Idées pour la suite (Centrale) : un écran par niveau `[alarme-line-Critique]`… ; défilement de `[alarme-line]` | ⏸ à faire |
 | Vérif : code des `.md` identique aux `.cs` | ✅ vérifié |
 | 00 - Sommaire (référencé partout, manquant) | ✅ fait (session de reprise) |
 
@@ -41,7 +43,7 @@ Les agents de `.opencode/agents` (écrits pour Java/Spring) sont utilisés avec 
 
 ### Liste consolidée des corrections (par priorité)
 
-1. **06 Carburant** : réacteurs à sec → autonomie INFINIE, alarme coupée (`GestionnaireCarburant.cs:284`, 300-313). Vérifié dans le code, trouvé par 3 agents.
+1. ✅ (corrigé le 2026-10-15) **06 Carburant** : réacteurs à sec → autonomie INFINIE, alarme coupée (`GestionnaireCarburant.cs:284`, 300-313). Vérifié dans le code, trouvé par 3 agents.
 2. **08 Sas** : un sas devenu incomplet est retiré de `ListeDesSas` → porte verrouillée à vie (`GestionnaireSas.cs:905-914`, 494-502). Vérifié.
 3. **02 Tri** : dictionnaire en erreur ou absent → alias vidés, le tri continue → coffres `{minerai}` vidés (`TriInventaire.cs:345-356`). Vérifié. Correction : mettre le tri en pause si le dictionnaire est invalide.
 4. **05 Avaries** : rescan et tri final hors budget d'instructions (`ControleAvaries.cs:194-229`, 324-379).

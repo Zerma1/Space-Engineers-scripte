@@ -6,7 +6,7 @@ tags: [space-engineers, sommaire, optimise]
 > [!summary] À quoi sert cette note ?
 > Point d'entrée de tous les scripts optimisés pour le **Bloc Programmable** de Space Engineers. Chaque note explique l'installation, la configuration, les commandes et contient le code complet, prêt à copier-coller.
 
-Commencez par lire [[00 - Conventions et Playbook IA]] : noms de blocs réservés, rôles des écrans, commandes communes.
+Commencez par lire [[00 - Conventions et Playbook IA]] : noms de blocs réservés, rôles des écrans, commandes communes. L'historique du projet est dans [[Jalons du projet]].
 
 ---
 
@@ -24,8 +24,8 @@ Commencez par lire [[00 - Conventions et Playbook IA]] : noms de blocs réservé
 |---|---|---|
 | [[Bus d'Alarmes]] | `SERVEUR_ALARMES.ini` | Tableau commun (optionnel) qui évite que deux scripts se disputent les gyrophares. |
 | [[Controle des Avaries]] | `ControleAvaries.cs` | Intégrité des blocs, rapport `Role=Avaries`, groupe `ALARMES_CRITIQUES`. |
-| [[Surveillance Carburant Uranium]] | `GestionnaireCarburant.cs` | Autonomie des réacteurs, `Role=Carburant`, groupe `ALARMES_URANIUM`. |
-| [[Centrale d'Alarmes]] | `CentraleAlarmes.cs` | Pilote unique des gyrophares (groupe `ALARMES`, couleur de l'alarme la plus grave) et écrans `[alarme-line]` / `[alarme-quant]`. |
+| [[Surveillance Carburant Uranium]] | `GestionnaireCarburant.cs` | Énergie : H2, uranium, glace, batteries, et alarme `Energie` qui monte en criticité quand plusieurs manquent (`Role=Carburant`). |
+| [[Centrale d'Alarmes]] | `CentraleAlarmes.cs` | Pilote unique des gyrophares (groupe `ALARMES`, couleur du niveau de criticité le plus grave) et écrans `[alarme-line]` / `[alarme-quant]`. |
 | [[Diagnostic Structurel par Projecteur]] | `DiagnosticStructurel.cs` | Blocs détruits détectés par comparaison avec un projecteur (`Role=Structure`). |
 
 ## Portes & sas
