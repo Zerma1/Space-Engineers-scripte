@@ -21,6 +21,8 @@ tags: [ia, sommaire]
 | [[Playbook IA]] | Méthode de travail des agents et répartition git. |
 | [[Suivi IA]] | Sauvegarde de l'état entre deux sessions. **À mettre à jour** à chaque étape terminée. |
 | `Conversations/` | Consignes et comptes rendus échangés entre modèles. |
+| `Journal/` | Prompts et réponses enregistrés en temps réel (voir [[Journal des sessions]]). |
+| `Prompteur/` | Le prompteur, mode d'emploi dans [[Utiliser le prompteur]] : script `prompteur.ps1` (à lancer), `relais.ps1`, [[Consignes prompteur]] (tri par le modèle local), `Modelfile`, [[Essais des modeles]], `Sauvegardes/`. |
 | `Revue/` | Rapports des agents : [[Revue - reviewer A]], [[Revue - reviewer B]], [[Scenarios de test]], [[Coherence documentation]]. |
 
 `CLAUDE.md` (Claude Code) et `AGENTS.md` (opencode), à la racine du dépôt, renvoient ici : chaque outil les charge automatiquement au démarrage.

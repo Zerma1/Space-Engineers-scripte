@@ -17,7 +17,15 @@ Retour au [[Lisez-moi IA]].
 3. **Anti-hallucination** : n'utiliser que des API Ingame réelles. En cas de doute, ne pas l'utiliser et le noter dans « Limites connues » de la note.
 4. Mettre à jour [[Suivi IA]] quand le script est terminé.
 
-## 2. Gestion de git : répartition des rôles
+## 2. Prompteur local
+
+Les messages de l'utilisateur peuvent arriver par le prompteur (`IA/Prompteur/prompteur.ps1`, modèle local `prompteur`) et le script `IA/Prompteur/relais.ps1`, qui enregistre l'échange dans `IA/Journal/` (voir [[Journal des sessions]] et [[Consignes prompteur]]). Un message relayé reste une demande de l'utilisateur.
+
+- Répondre en texte complet et autonome : la réponse est affichée telle quelle, l'utilisateur ne voit pas le détail des outils.
+- Si un point n'est pas vérifié dans les fichiers, le dire (« non vérifié », « je ne sais pas ») plutôt que deviner. Citer les fichiers et lignes (`fichier.cs:123`).
+- En mode lecture (par défaut), ne rien modifier : proposer les changements et attendre que l'utilisateur relance en mode édition.
+
+## 3. Gestion de git : répartition des rôles
 
 **Big Pickle** (IA sur opencode) gère tout ce qui touche à git et GitHub : commits et messages, branches, push, milestones, issues et pull requests. Claude supervise : il lance Big Pickle, relit le résultat (`git log`, `git show --stat`) et **propose un push** à l'utilisateur quand c'est pertinent (fin de lot cohérent, script terminé et documenté). Rien n'est poussé sans accord.
 

@@ -1,0 +1,7 @@
+# Prompteur du projet : qwen3:8b avec plus de contexte et peu de créativité.
+# Création : ollama create qwen3-prompteur -f IA/Prompteur/Modelfile
+FROM qwen3:8b
+# opencode envoie beaucoup d'instructions : 4 096 tokens (valeur par défaut d'Ollama) ne suffisent pas
+PARAMETER num_ctx 16384
+# Température basse : recopier fidèlement, ne pas inventer
+PARAMETER temperature 0.2

@@ -1,0 +1,8 @@
+# Prompteur du projet : qwen2.5:3b, utilisé seulement pour trier les messages (destinataire, niveau, mode).
+# Création : ollama create prompteur -f IA/Prompteur/Modelfile
+# Choix du modèle : voir « Essais des modeles.md » (qwen3:8b trop gros pour 4 Go de GPU, llama3.2:3b abîme les accents).
+FROM qwen2.5:3b
+# Le tri ne lit que les consignes et un message : un petit contexte tient entièrement dans le GPU
+PARAMETER num_ctx 4096
+# Température nulle : la même demande donne toujours la même décision
+PARAMETER temperature 0

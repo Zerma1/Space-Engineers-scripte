@@ -6,7 +6,7 @@ tags: [space-engineers, sommaire, optimise]
 > [!summary] À quoi sert cette note ?
 > Point d'entrée de tous les scripts optimisés pour le **Bloc Programmable** de Space Engineers. Chaque note explique l'installation, la configuration, les commandes et contient le code complet, prêt à copier-coller.
 
-Commencez par lire les [[Conventions du projet]] : noms de blocs réservés, rôles des écrans, commandes communes. Les fichiers destinés aux IA (playbook, suivi, revues) sont dans le dossier `IA/` : voir [[Lisez-moi IA]]. L'historique du projet est dans [[Jalons du projet]].
+Commencez par lire les [[Conventions du projet]] : noms de blocs réservés, rôles des écrans, commandes communes. Les fichiers destinés aux IA (playbook, suivi, revues) sont dans le dossier `IA/` : voir [[Lisez-moi IA]]. Pour discuter avec les IA en gardant une trace des échanges : [[Utiliser le prompteur]]. L'historique du projet est dans [[Jalons du projet]].
 
 ---
 

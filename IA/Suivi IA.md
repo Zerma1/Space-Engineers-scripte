@@ -30,6 +30,8 @@ Voir `.opencode/prompte/initial.md` : analyser les scripts et les `.md` existant
 | 00 - Sommaire (référencé partout, manquant) | ✅ fait (session de reprise) |
 | Dossier `IA/` : playbook, suivi, revues et conversations entre modèles sortis de `optimisation_Claude` ; `CLAUDE.md` et `AGENTS.md` à la racine (2026-10-16) | ✅ fait |
 | Conventions séparées du playbook (`Scripts/Conventions du projet.md` pour joueur, développeur et IA ; `IA/Playbook IA.md`) ; `optimisation_Claude` renommé `Scripts` (2026-10-16) | ✅ fait |
+| Prompteur (essai `qwen3-prompteur` abandonné) : `IA/Prompteur/` (consignes, `relais.ps1`, `Modelfile`), journal `IA/Journal/` ; relais testé avec Claude et Big Pickle, remplacé par `IA/Prompteur/prompteur.ps1` : le modèle local (qwen2.5:3b) ne fait que trier, le script transmet le message original ; testé de bout en bout (2026-10-16), essais dans `Essais des modeles.md` | ✅ fait |
+| Notice utilisateur [[Utiliser le prompteur]] (lancer, préfixes, coûts, journal, dépannage) ; liée depuis le Sommaire et Lisez-moi IA (2026-10-16) | ✅ fait |
 | Réorganisation committée en deux commits (« Renomme optimisation_Claude en Scripts et regroupe les fichiers IA dans IA/ » puis « Corrige le lien original du Serveur Dictionnaire »), sans push (2026-10-16) | ✅ fait |
 
 ## Passe de vérification par agents (demandée le 2026-10-13)
