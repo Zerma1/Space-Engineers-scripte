@@ -1,12 +1,12 @@
 ---
-tags: [space-engineers, conventions, playbook]
+tags: [space-engineers, conventions]
 ---
-# Conventions du projet & Playbook IA
+# Conventions du projet
 
 > [!summary] À quoi sert cette note ?
-> Elle fixe les règles communes à **tous** les scripts de `optimisation_Claude`. Donne-la en contexte à n'importe quelle IA de codage (Claude, Gemini, opencode…) avant de lui demander un nouveau script : elle produira du code compatible avec le reste du « Data Center ».
+> Elle fixe les règles communes à **tous** les scripts du dossier `Scripts` : pour le **joueur** (noms de blocs réservés, rôles des écrans, commandes), pour le **développeur** et pour les **agents IA** (contraintes du Bloc Programmable, règles de performance et d'écriture). Un script qui les respecte reste compatible avec le reste du « Data Center ».
 
-Retour au [[00 - Sommaire]].
+Retour au [[00 - Sommaire]] · Agents IA : voir aussi le [[Playbook IA]].
 
 ---
 
@@ -30,12 +30,12 @@ Retour au [[00 - Sommaire]].
 6. **Minuteries** avec `Runtime.TimeSinceLastRun` (temps de jeu), pas `DateTime.Now`.
 7. **Echo** court : état, nombre de blocs gérés, temps d'exécution (`Runtime.LastRunTimeMs`), erreurs de configuration.
 
-## 3. Règles d'écriture (agent coder)
+## 3. Règles d'écriture
 
 - **Nommage en français**, sans accents dans les identifiants : `listeConteneurs`, `CalculerAutonomie()`, `SEUIL_VIDE`. Les mots-clés C# et les API du jeu restent en anglais (`GetBlocksOfType`, `CustomData`…).
 - **Constantes de configuration** regroupées en haut du script.
 - **Commentaires abondants** : `/// <summary>` sur chaque classe / méthode, et le *pourquoi* des choix.
-- **Anti-hallucination** : uniquement des API Ingame réelles ; en cas de doute, ne pas l'utiliser et le noter dans « Limites connues ».
+- **API réelles uniquement** : seulement des API Ingame qui existent ; en cas de doute, ne pas l'utiliser et le noter dans « Limites connues ».
 
 ## 4. Conventions partagées entre scripts
 
@@ -79,20 +79,10 @@ Surface=0
 | `rescan` | Relit immédiatement tous les blocs (après construction / renommage). |
 | `ACK` | Acquitte une alarme (Avaries, Carburant). |
 
-## 5. Playbook pour une IA : créer un nouveau script
+## 5. Ajouter un script
 
-1. Lire cette note, puis un script existant proche (ex. [[Controle des Avaries]]) comme modèle.
+1. Partir d'un script existant proche (ex. [[Controle des Avaries]]) comme modèle.
 2. Respecter le gabarit de note : frontmatter → résumé → Prérequis → Installation → Configuration → Commandes → Fonctionnement → Optimisations → Limites → Dépannage → Code complet → Voir aussi.
 3. Le bloc de code de la note doit être **identique** au fichier `.cs`.
 4. Si le script affiche : utiliser `[Ecran]` + un nouveau `Role`. S'il alarme : copier la classe `BusAlarmes` telle quelle, appeler `Publier(source, besoin, niveau, détail)` pour chaque alarme puis `Terminer()` (voir [[Bus d'Alarmes]]), niveau = critique, majeur, normal ou mineur, et laisser la [[Centrale d'Alarmes]] piloter les gyrophares.
 5. Ajouter le script au [[00 - Sommaire]].
-
-## 6. Gestion de git : répartition des rôles
-
-**Big Pickle** (IA sur opencode) gère tout ce qui touche à git et GitHub : commits et messages, branches, push, milestones, issues et pull requests. Claude supervise : il lance Big Pickle, relit le résultat (`git log`, `git show --stat`) et **propose un push** à l'utilisateur quand c'est pertinent (fin de lot cohérent, script terminé et documenté). Rien n'est poussé sans accord.
-
-- Claude écrit le code (`.cs`) et la documentation (`.md`, `.ini`) ; il ne commite pas lui-même sauf demande explicite.
-- Un seul acteur à la fois sur git : Claude signale la fin de ses modifications, puis Big Pickle commite.
-- Commits ciblés par sujet (un script ou une note par commit), jamais de `git add -A` global.
-- Messages en français, à l'indicatif présent (« Ajoute… », « Corrige… »), comme dans l'historique.
-- `.obsidian/`, `.opencode/` et `.idea/` sont dans `.gitignore` : ne jamais les commiter.

@@ -7,13 +7,13 @@ tags: [suivi, ia]
 > Si une session IA s'arrête (manque de tokens), la suivante lit ce fichier pour reprendre exactement où elle en était.
 
 ## Demande d'origine
-Voir `.opencode/prompte/initial.md` : analyser les scripts et les `.md` existants **sans les modifier**, produire des versions optimisées dans `./optimisation_Claude` (C# du Bloc Programmable de Space Engineers) et une note Obsidian par script et par dictionnaire.
+Voir `.opencode/prompte/initial.md` : analyser les scripts et les `.md` existants **sans les modifier**, produire des versions optimisées dans `./optimisation_Claude` (renommé `Scripts` le 2026-10-16) (C# du Bloc Programmable de Space Engineers) et une note Obsidian par script et par dictionnaire.
 
 ## État (2026-10-13)
 
 | Étape | État |
 |---|---|
-| 00 - Conventions et Playbook IA | ✅ fait |
+| Conventions et Playbook IA (séparés le 2026-10-16 : `Scripts/Conventions du projet.md` et `IA/Playbook IA.md`) | ✅ fait |
 | 01 - Serveur Dictionnaire (.ini + .md) | ✅ fait |
 | 02 - Tri Automatique (.cs + .md) | ✅ fait |
 | 03 - Affichage Data Center (.cs + .md) | ✅ fait |
@@ -28,10 +28,13 @@ Voir `.opencode/prompte/initial.md` : analyser les scripts et les `.md` existant
 | Idées pour la suite (Centrale) : un écran par niveau `[alarme-line-Critique]`… ; défilement de `[alarme-line]` | ⏸ à faire |
 | Vérif : code des `.md` identique aux `.cs` | ✅ vérifié |
 | 00 - Sommaire (référencé partout, manquant) | ✅ fait (session de reprise) |
+| Dossier `IA/` : playbook, suivi, revues et conversations entre modèles sortis de `optimisation_Claude` ; `CLAUDE.md` et `AGENTS.md` à la racine (2026-10-16) | ✅ fait |
+| Conventions séparées du playbook (`Scripts/Conventions du projet.md` pour joueur, développeur et IA ; `IA/Playbook IA.md`) ; `optimisation_Claude` renommé `Scripts` (2026-10-16) | ✅ fait |
+| Réorganisation committée en deux commits (« Renomme optimisation_Claude en Scripts et regroupe les fichiers IA dans IA/ » puis « Corrige le lien original du Serveur Dictionnaire »), sans push (2026-10-16) | ✅ fait |
 
 ## Passe de vérification par agents (demandée le 2026-10-13)
 
-Les agents de `.opencode/agents` (écrits pour Java/Spring) sont utilisés avec leur rôle et leurs règles, adaptés au C# du Bloc Programmable. Rapports dans `optimisation_Claude/Revue/`.
+Les agents de `.opencode/agents` (écrits pour Java/Spring) sont utilisés avec leur rôle et leurs règles, adaptés au C# du Bloc Programmable. Rapports dans `IA/Revue/`.
 
 | Agent | Périmètre | Rapport | État |
 |---|---|---|---|

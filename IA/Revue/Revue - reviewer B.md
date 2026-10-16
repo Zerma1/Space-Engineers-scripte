@@ -4,7 +4,7 @@ tags: [space-engineers, revue]
 # Revue de code - reviewer B (scripts 04 à 09)
 
 > [!summary] Périmètre et méthode
-> Revue en lecture seule (aucun fichier modifié) de `ControleAvaries.cs` (05), `GestionnaireCarburant.cs` (06), du bus `SERVEUR_ALARMES.ini` / classe `BusAlarmes` (04), de `DiagnosticStructurel.cs` (07), `GestionnaireSas.cs` (08) et `FermeturePortes.cs` (09), au regard de [[00 - Conventions et Playbook IA]] (C# 6, ~50 000 instructions, 100 000 caractères, conventions partagées) et des originaux du dossier `Scripte\` et de `../../_old`.
+> Revue en lecture seule (aucun fichier modifié) de `ControleAvaries.cs` (05), `GestionnaireCarburant.cs` (06), du bus `SERVEUR_ALARMES.ini` / classe `BusAlarmes` (04), de `DiagnosticStructurel.cs` (07), `GestionnaireSas.cs` (08) et `FermeturePortes.cs` (09), au regard de [[Conventions du projet]] (C# 6, ~50 000 instructions, 100 000 caractères, conventions partagées) et des originaux du dossier `Scripte\` et de `../../_old`.
 > Chaque constat est classé **Fait** (démontré par le code cité) ou **Supposition** (dépend d'un comportement du jeu non vérifiable ici).
 
 Retour au [[00 - Sommaire]].
@@ -260,6 +260,6 @@ Retour au [[00 - Sommaire]].
 | Portes dans les groupes d'alarme vs 09 | Voir BUS-2 |
 
 ## Voir aussi
-- [[00 - Conventions et Playbook IA]]
+- [[Conventions du projet]]
 - [[Bus d'Alarmes]] · [[Controle des Avaries]] · [[Surveillance Carburant Uranium]]
 - [[Diagnostic Structurel par Projecteur]] · [[Sas Automatique (Airlock)]] · [[Fermeture Automatique des Portes]]

@@ -8,7 +8,7 @@ tags: [space-engineers, revue]
 > - `03 - Affichage Data Center/AffichageDataCenter.cs` (1 122 lignes, 46 507 caractères)
 > - `01 - Serveur Dictionnaire/SERVEUR_DICTIONNAIRE.ini` (cohérence avec le parsing des deux scripts)
 >
-> Références : [[00 - Conventions et Playbook IA]], originaux `../../_old/Scripte`, `../../_old/Scripte/Gestion de l'Affichage et Traductions.md`, `../../_old/gemini-code-1791364758252.cs` (tri), `../../_old/gemini-code-1791364773398.cs` (affichage).
+> Références : [[Conventions du projet]], originaux `../../_old/Scripte`, `../../_old/Scripte/Gestion de l'Affichage et Traductions.md`, `../../_old/gemini-code-1791364758252.cs` (tri), `../../_old/gemini-code-1791364773398.cs` (affichage).
 >
 > Aucun fichier existant n'a été modifié.
 

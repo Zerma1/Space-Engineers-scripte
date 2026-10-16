@@ -4,7 +4,7 @@ tags: [space-engineers, revue, documentation]
 # Revue : cohérence entre les notes et le code
 
 > [!summary] Objet
-> Pour chaque note de `optimisation_Claude`, on vérifie que le **texte explicatif** (pas le bloc de code, déjà vérifié identique au `.cs`) décrit fidèlement ce que fait le code : noms de blocs / groupes / balises, sections et clés Custom Data, constantes, commandes, fréquence d'exécution, déroulement, limites et dépannage. Revue en lecture seule : aucun fichier existant n'a été modifié.
+> Pour chaque note de `Scripts`, on vérifie que le **texte explicatif** (pas le bloc de code, déjà vérifié identique au `.cs`) décrit fidèlement ce que fait le code : noms de blocs / groupes / balises, sections et clés Custom Data, constantes, commandes, fréquence d'exécution, déroulement, limites et dépannage. Revue en lecture seule : aucun fichier existant n'a été modifié.
 > Légende : **Fait** = lu dans le code (fichier:ligne). **Supposition** = comportement du jeu non vérifiable à la lecture du code.
 
 Retour au [[00 - Sommaire]].
@@ -16,7 +16,7 @@ Retour au [[00 - Sommaire]].
 | Note | Fichier(s) confronté(s) | Verdict | Écarts |
 |---|---|---|---|
 | [[00 - Sommaire]] | tous | **OK** | 0 |
-| [[00 - Conventions et Playbook IA]] | tous | Écarts mineurs | 2 (E-C1, E-C2) |
+| [[Conventions du projet]] | tous | Écarts mineurs | 2 (E-C1, E-C2) |
 | [[Serveur Dictionnaire]] | `SERVEUR_DICTIONNAIRE.ini`, `TriInventaire.cs`, `AffichageDataCenter.cs` | Écarts | 3 (E-01a moyen, E-01b, E-01c mineurs) |
 | [[Tri Automatique des Inventaires]] | `TriInventaire.cs` | Quasi OK | 1 mineur (E-02a) |
 | [[Affichage Data Center]] | `AffichageDataCenter.cs` | Écarts | 2 (E-03a moyen, E-03b mineur) + 1 précision |
@@ -28,7 +28,7 @@ Retour au [[00 - Sommaire]].
 | [[Fermeture Automatique des Portes]] | `FermeturePortes.cs` | Quasi OK | 1 mineur (E-09a) + 1 précision |
 | Transversal | tous | Cosmétique | 1 (E-T1 : « ~1,6 s » / « ~1,7 s ») |
 
-**Liens Obsidian** : 21 cibles distinctes `[[...]]` + 2 ancres internes (`[[#9. Code complet]]`, `[[#4. Commandes]]` dans la note 07). **Aucun lien cassé** : toutes les cibles existent (notes de `optimisation_Claude` ou de `../../_old/Scripte`), et les deux ancres correspondent à des titres existants.
+**Liens Obsidian** : 21 cibles distinctes `[[...]]` + 2 ancres internes (`[[#9. Code complet]]`, `[[#4. Commandes]]` dans la note 07). **Aucun lien cassé** : toutes les cibles existent (notes de `Scripts` ou de `../../_old/Scripte`), et les deux ancres correspondent à des titres existants.
 
 ### Contrôles transversaux (faits)
 
@@ -192,14 +192,14 @@ Main -> TraiterCommande -> (si pas en pause) [10 s] ScannerLesPortes -> Surveill
 
 ### E-C1 — Conventions : tableau des noms réservés incomplet (gravité : mineure)
 
-- **Note** : [[00 - Conventions et Playbook IA]], §4.1 (l. 50-53).
+- **Note** : [[Conventions du projet]], §4.1 (l. 50-53).
 - **Texte** : le tableau cite `PROJECTEUR_REPARATION`, `LCD_SCANNER`, `[NoTri]`, `[NoAuto]`.
 - **Code (fait)** : deux autres balises réservées existent : `[DIAG]` dans le nom d'un projecteur (`DiagnosticStructurel.cs:40, 249`) et `[Auto:x]` dans le nom d'une porte (`FermeturePortes.cs:51, 275`).
 - **Correction proposée** : ligne projecteur : « `PROJECTEUR_REPARATION` ou balise `[DIAG]`, `LCD_SCANNER` » ; ajouter une ligne « `[Auto:x]` | portes | délai personnalisé de [[Fermeture Automatique des Portes]] ».
 
 ### E-C2 — Conventions : règle « Custom Data reparsé seulement s'il a changé » (gravité : mineure)
 
-- **Note** : [[00 - Conventions et Playbook IA]], §2, règle 4 (l. 28).
+- **Note** : [[Conventions du projet]], §2, règle 4 (l. 28).
 - **Texte** : « **Custom Data** reparsé seulement s'il a changé. »
 - **Code (fait)** : appliqué par Tri (`TriInventaire.cs:334`), Affichage (`AffichageDataCenter.cs:411, 795`) et `BusAlarmes` (05 l. 257). En revanche, `EcransRole.Rechercher` reparse **à chaque rescan** (toutes les 10 s) le Custom Data de tous les blocs contenant `Role` (`ControleAvaries.cs:847-852`, idem 06), et le Diagnostic reparse les blocs contenant `[Ecran]` à chaque rescan (`DiagnosticStructurel.cs:329-336`). Le coût reste faible (10 s), mais la règle n'est pas universelle.
 - **Correction proposée** : « Custom Data reparsé seulement s'il a changé, **ou au plus au rescan périodique** (recherche des écrans `Role=`). »
@@ -252,4 +252,4 @@ Constantes (9 lignes), bornes 0,5-3600 s, parsing virgule/point, portes de hanga
 ## Voir aussi
 
 - [[00 - Sommaire]]
-- [[00 - Conventions et Playbook IA]]
+- [[Conventions du projet]]

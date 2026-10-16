@@ -162,7 +162,7 @@ Exemple : les lumières de la salle des réacteurs ne s'allument que pour le car
 Un même bloc à plusieurs surfaces peut porter les deux balises (ex. `Cockpit [alarme-line:0] [alarme-quant:1]`).
 
 > [!warning] Un écran = un seul script
-> Ces écrans sont repérés par leur **nom**. Ne leur mettez pas de section `[Ecran]` dans le Custom Data, sinon [[Affichage Data Center]] les capturerait aussi (voir [[00 - Conventions et Playbook IA]]).
+> Ces écrans sont repérés par leur **nom**. Ne leur mettez pas de section `[Ecran]` dans le Custom Data, sinon [[Affichage Data Center]] les capturerait aussi (voir [[Conventions du projet]]).
 
 Les cases de `[alarme-quant]` sont dessinées en sprites, et leur disposition suit la forme de l'écran :
 
@@ -1179,4 +1179,4 @@ public class EcranAlarme
 - [[Bus d'Alarmes]] — format de SERVEUR_ALARMES, classe `BusAlarmes` des scripts sources
 - [[Controle des Avaries]] — source `Avaries` (critique)
 - [[Surveillance Carburant Uranium]] — alarmes `Carburant`, `Uranium`, `Glace`, `Batteries` et `Energie`
-- [[00 - Conventions et Playbook IA]]
+- [[Conventions du projet]]

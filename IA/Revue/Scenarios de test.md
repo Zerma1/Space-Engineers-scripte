@@ -7,7 +7,7 @@ tags: [space-engineers, tests]
 > Les scripts du Bloc Programmable (PB) ne peuvent pas être testés par un framework : on les teste **en jeu**, de préférence en **mode Créatif**, en observant ce que le joueur voit (console Echo du PB, écrans, portes, lumières, sons, inventaires). Pour chaque script : 1) les comportements à vérifier, 2) les scénarios, dont les cas limites, 3) le résultat attendu, 4) le banc d'essai et la procédure à cocher.
 > Les **écarts** entre ce que promettent les notes et ce que fait le code sont regroupés en fin de note.
 
-Retour au [[00 - Sommaire]] · Règles communes : [[00 - Conventions et Playbook IA]]
+Retour au [[00 - Sommaire]] · Règles communes : [[Conventions du projet]]
 
 ---
 
@@ -540,7 +540,7 @@ Banc : les 5 scripts d'affichage installés (Affichage, Avaries, Carburant, Diag
 
 ### E4 — Rôles d'écrans : deux scripts sélectionnent des écrans par leur **nom**, sans regarder `[Ecran]`
 
-- **Promesse** : [[00 - Conventions et Playbook IA]] §4.2 : « Un écran ne doit être piloté que par **un seul** script. La clé `Role` décide lequel. »
+- **Promesse** : [[Conventions du projet]] §4.2 : « Un écran ne doit être piloté que par **un seul** script. La clé `Role` décide lequel. »
 - **Code** :
   - `DiagnosticStructurel.cs:322` : un LCD nommé `LCD_SCANNER` est pris quel que soit son Custom Data ;
   - `GestionnaireSas.cs:889-901` : tout bloc `[SAS-…-lcd]` est pris quel que soit son Custom Data ;
@@ -579,5 +579,5 @@ Banc : les 5 scripts d'affichage installés (Affichage, Avaries, Carburant, Diag
 ## Voir aussi
 
 - [[00 - Sommaire]]
-- [[00 - Conventions et Playbook IA]]
+- [[Conventions du projet]]
 - [[Bus d'Alarmes]] · [[Serveur Dictionnaire]]

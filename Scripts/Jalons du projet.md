@@ -4,7 +4,7 @@ tags: [space-engineers, suivi, jalons]
 # Jalons du projet
 
 > [!summary] Résumé
-> Historique du projet découpé en jalons, reconstitué à partir de l'historique git et de [[SUIVI_IA]]. Chaque jalon terminé porte un **tag git** (`v0.x.0`) et correspond à un **milestone GitHub** du même nom.
+> Historique du projet découpé en jalons, reconstitué à partir de l'historique git et de [[Suivi IA]]. Chaque jalon terminé porte un **tag git** (`v0.x.0`) et correspond à un **milestone GitHub** du même nom.
 
 Retour au [[00 - Sommaire]].
 
@@ -47,7 +47,7 @@ Les scripts et notes écrits avant l'optimisation, conservés sans modification 
 
 ### M1 – Optimisation initiale
 
-- [[00 - Conventions et Playbook IA]] et [[00 - Sommaire]].
+- [[Conventions du projet]], [[Playbook IA]] et [[00 - Sommaire]] (à l'origine une seule note « Conventions et Playbook IA »).
 - [[Serveur Dictionnaire]] (nouveau format `[Categories]` / `[Alias]` / `[Affichage]`).
 - [[Tri Automatique des Inventaires]], [[Affichage Data Center]].
 - [[Bus d'Alarmes]] : fin du conflit des gyrophares entre les deux scripts d'alarme.
@@ -59,7 +59,7 @@ Les scripts et notes écrits avant l'optimisation, conservés sans modification 
 - [[Revue - reviewer A]] (Tri, Affichage, Dictionnaire) et [[Revue - reviewer B]] (Avaries, Carburant, Bus, Diagnostic, Sas, Portes).
 - [[Scenarios de test]] : 174 scénarios.
 - [[Coherence documentation]] : notes ↔ code.
-- Liste consolidée des corrections dans [[SUIVI_IA]].
+- Liste consolidée des corrections dans [[Suivi IA]].
 
 ### M3 – Publication
 
@@ -88,7 +88,7 @@ Les scripts et notes écrits avant l'optimisation, conservés sans modification 
 
 - Un écran par niveau : `[alarme-line-Critique]`, `[alarme-line-Majeur]`, `[alarme-line-Normal]`, `[alarme-line-Mineur]`.
 - Défilement de la liste `[alarme-line]` quand elle dépasse l'écran.
-- Corrections restantes de la revue (voir [[SUIVI_IA]]) :
+- Corrections restantes de la revue (voir [[Suivi IA]]) :
   - 08 Sas : un sas devenu incomplet laisse une porte verrouillée à vie ;
   - 02 Tri : dictionnaire en erreur → coffres à alias vidés ;
   - 05 Avaries : rescan et tri final hors budget d'instructions ;
@@ -99,4 +99,4 @@ Les scripts et notes écrits avant l'optimisation, conservés sans modification 
 ## Voir aussi
 
 - [[00 - Sommaire]]
-- [[SUIVI_IA]] — état détaillé pour la reprise par une IA
+- [[Suivi IA]] — état détaillé pour la reprise par une IA
