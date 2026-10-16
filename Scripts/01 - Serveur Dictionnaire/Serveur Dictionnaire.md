@@ -5,7 +5,7 @@ tags:
   - configuration
   - optimise
 fichier: SERVEUR_DICTIONNAIRE.ini
-original: "[[_old/Scripte/guide_du_tri_automatique_et_data_center_seclaude|guide_du_tri_automatique_et_data_center_se]]"
+original: "[[_old/Scripte/guide_du_tri_automatique_et_data_center_se|guide_du_tri_automatique_et_data_center_se]]"
 ---
 # Serveur Dictionnaire
 
@@ -284,5 +284,5 @@ Missile200mm=Missiles 200 mm
 
 - [[Tri Automatique des Inventaires]] — utilise `[Categories]` et `[Alias]`
 - [[Affichage Data Center]] — utilise `[Affichage]`
-- [[00 - Conventions et Playbook IA]]
+- [[Conventions du projet]]
 - Notes d'origine : [[_old/Scripte/guide_du_tri_automatique_et_data_center_se|guide_du_tri_automatique_et_data_center_se]], [[_old/Scripte/Gestion de l'Affichage et Traductions|Gestion de l'Affichage et Traductions]]
