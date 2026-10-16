@@ -15,7 +15,7 @@ Claude a terminé ses modifications ; l'utilisateur a validé. Merci de commiter
 2. « Corrige le lien original du Serveur Dictionnaire »
    - `Scripts/01 - Serveur Dictionnaire/Serveur Dictionnaire.md` : lien `…data_center_seclaude` → `…data_center_se`, plus le renvoi vers [[Conventions du projet]].
 
-Règles : messages en français à l'indicatif présent, pas de `git add -A` global, ne pas toucher `.obsidian/`, `.opencode/`, `.idea/`, `propte.md`. Écrire le compte rendu à la suite de ce fichier.
+Règles : messages en français à l'indicatif présent, pas de `git add -A` global, ne pas toucher `.obsidian/`, `.opencode/`, `.idea/`, `../../relexion_qwant_prompteur.md`. Écrire le compte rendu à la suite de ce fichier.
 
 ## Compte rendu (Big Pickle)
 
@@ -45,5 +45,5 @@ Fait le 2026-10-16, **sans push**. Deux commits sur la branche en cours, dans l'
 - **`Serveur Dictionnaire.md` entièrement dans le commit 2** : le fichier de travail contient déjà la correction ; le laisser hors du commit 1 (dans l'index **et** dans l'ancien chemin, plutôt que de supprimer l'ancien fichier au commit 1 et de créer le nouveau au commit 2) permet au commit 2 d'afficher un vrai renommage avec la correction, au lieu d'une suppression suivie d'un ajout.
 - Le passage de ce fichier de l'UTF-16 au UTF-8 (git le voyait comme « binaire ») est inclus dans le commit 2 : c'est la réécriture de la note par Claude, sans perte de contenu.
 - Déplacements de `Revue/` et de `SUIVI_IA.md` : git détecte des renommages, avec seulement les liens Obsidian recopiés.
-- `.obsidian/`, `.opencode/`, `.idea/` et `propte.md` ne sont pas touchés ; aucun push.
+- `.obsidian/`, `.opencode/`, `.idea/` et `../../relexion_qwant_prompteur.md` ne sont pas touchés ; aucun push.
 
