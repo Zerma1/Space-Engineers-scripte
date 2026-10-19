@@ -1,0 +1,21 @@
+# Consigne pour Big Pickle (gestionnaire git)
+
+## Demande
+
+Commit des fichiers restants non commités.
+
+## Fichiers à commiter
+
+1. `IA/Journal/2026-10-19 08h35 - Orchestrateur - consommation tokens par agent.md` (modifié)
+2. `IA/Conversations/2026-10-19 - Orchestrateur → Big Pickle - commit derniers fichiers.md` (non versionné)
+3. `IA/Conversations/2026-10-19 - Orchestrateur → Big Pickle - commit consigne derniers fichiers.md` (non versionné)
+
+## NE PAS commiter
+
+- `.opencode/` (dans `.gitignore`, interdit par les règles du projet)
+
+## Contraintes
+
+- Un seul commit
+- Pas de push
+- Message en français, à l'indicatif présent
