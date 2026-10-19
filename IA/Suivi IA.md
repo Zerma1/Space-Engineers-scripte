@@ -32,11 +32,13 @@ Voir `.opencode/prompte/initial.md` : analyser les scripts et les `.md` existant
 | Conventions séparées du playbook (`Scripts/Conventions du projet.md` pour joueur, développeur et IA ; `IA/Playbook IA.md`) ; `optimisation_Claude` renommé `Scripts` (2026-10-16) | ✅ fait |
 | Prompteur (essai `qwen3-prompteur` abandonné) : `IA/Prompteur/` (consignes, `relais.ps1`, `Modelfile`), journal `IA/Journal/` ; relais testé avec Claude et Big Pickle, remplacé par `IA/Prompteur/prompteur.ps1` : le modèle local (qwen2.5:3b) ne fait que trier, le script transmet le message original ; testé de bout en bout (2026-10-16), essais dans `Essais des modeles.md` | ✅ fait |
 | Notice utilisateur [[Utiliser le prompteur]] (lancer, préfixes, coûts, journal, dépannage) ; liée depuis le Sommaire et Lisez-moi IA (2026-10-16) | ✅ fait |
+| `ORCHESTRATOR.md` à la racine : rôles des modèles, appels, règle d'enregistrement ; option `-Agent` de `relais.ps1` pour les agents opencode (testée avec `explainer`) (2026-10-16) | ✅ fait |
+| `ORCHESTRATOR.md` supprimé (sauvegarde : `IA/Prompteur/Sauvegardes/2026-10-16 15h40 - avant suppression ORCHESTRATOR/`) : un fichier par rôle dans `agents/` (`ORCHESTRATEUR.md`, `git.md`) ; `CLAUDE.md` et `AGENTS.md` conservés car chargés automatiquement par Claude Code et opencode, mis à jour pour pointer vers `agents/` (2026-10-16) | ✅ fait |
 | Réorganisation committée en deux commits (« Renomme optimisation_Claude en Scripts et regroupe les fichiers IA dans IA/ » puis « Corrige le lien original du Serveur Dictionnaire »), sans push (2026-10-16) | ✅ fait |
 
 ## Passe de vérification par agents (demandée le 2026-10-13)
 
-Les agents de `.opencode/agents` (écrits pour Java/Spring) sont utilisés avec leur rôle et leurs règles, adaptés au C# du Bloc Programmable. Rapports dans `IA/Revue/`.
+Les agents de `../agents` (écrits pour Java/Spring) sont utilisés avec leur rôle et leurs règles, adaptés au C# du Bloc Programmable. Rapports dans `IA/Revue/`.
 
 | Agent | Périmètre | Rapport | État |
 |---|---|---|---|
