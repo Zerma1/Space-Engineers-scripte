@@ -25,4 +25,6 @@ tags: [ia, sommaire]
 | `Prompteur/` | Le prompteur, mode d'emploi dans [[Utiliser le prompteur]] : script `prompteur.ps1` (à lancer), `relais.ps1`, [[Consignes prompteur]] (tri par le modèle local), `Modelfile`, [[Essais des modeles]], `Sauvegardes/`. |
 | `Revue/` | Rapports des agents : [[Revue - reviewer A]], [[Revue - reviewer B]], [[Scenarios de test]], [[Coherence documentation]]. |
 
+Rôles des modèles et règle d'enregistrement : un fichier par rôle dans `agents/` (racine) ; l'orchestrateur est `agents/ORCHESTRATEUR.md`.
+
 `CLAUDE.md` (Claude Code) et `AGENTS.md` (opencode), à la racine du dépôt, renvoient ici : chaque outil les charge automatiquement au démarrage.
