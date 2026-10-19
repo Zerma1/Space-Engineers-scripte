@@ -3,7 +3,7 @@
     Relaie un prompt vers Claude ou Big Pickle et enregistre l'échange, mot pour mot, dans IA/Journal.
 
 .DESCRIPTION
-    Le prompteur (qwen3:8b) n'écrit jamais le journal lui-même : ce script recopie le prompt envoyé
+    L'orchestrateur (prompteur.ps1 + qwen2.5:3b) n'écrit jamais les réponses lui-même : ce script recopie le prompt envoyé
     et la réponse reçue, sans reformulation, puis affiche la réponse.
     La session de chaque modèle est retenue d'un appel à l'autre (fichier d'état dans %TEMP%) :
     le modèle garde le fil de la discussion et le cache de prompt réduit la consommation de tokens.
@@ -12,6 +12,7 @@
     .\IA\Prompteur\relais.ps1 -Modele claude -FichierPrompt IA\Prompteur\prompt.md -Sujet "corrections sas"
     .\IA\Prompteur\relais.ps1 -Modele bigpickle -FichierPrompt IA\Prompteur\prompt.md -Mode edition
     .\IA\Prompteur\relais.ps1 -Modele claude -Nouvelle -Sujet "nouveau script" -FichierPrompt IA\Prompteur\prompt.md
+    .\IA\Prompteur\relais.ps1 -Modele bigpickle -Agent reviewer -Nouvelle -Sujet "revue sas" -Prompt "Relis GestionnaireSas.cs"
 #>
 param(
     [Parameter(Mandatory = $true)][ValidateSet('claude', 'bigpickle')][string]$Modele,
@@ -24,6 +25,12 @@ param(
     # Démarre une nouvelle session (nouveau sujet) au lieu de reprendre la précédente
     [switch]$Nouvelle,
     [string]$Sujet = 'session',
+    # Agent opencode à utiliser avec Big Pickle (reviewer, tester, explainer, coder… de .opencode/agents)
+    [string]$Agent,
+    # Journal imposé (l'orchestrateur écrit toute la session dans un seul fichier)
+    [string]$Journal,
+    # Qui envoie la consigne, pour le titre dans le journal
+    [string]$Origine = 'Utilisateur',
     # Plafond de dépense en dollars pour cet appel Claude (0 = pas de plafond)
     [double]$BudgetUsd = 0
 )
@@ -35,8 +42,10 @@ $OutputEncoding = $utf8
 
 $racine = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $dossierJournal = Join-Path $racine 'IA\Journal'
-$fichierEtat = Join-Path $env:TEMP "prompteur-space-engineers-$Modele.json"
-$nomModele = if ($Modele -eq 'claude') { 'Claude' } else { 'Big Pickle' }
+# Une session par destinataire : Big Pickle et chacun de ses agents ont la leur
+$suffixeAgent = if ($Agent) { "-$Agent" } else { '' }
+$fichierEtat = Join-Path $env:TEMP "prompteur-space-engineers-$Modele$suffixeAgent.json"
+$nomModele = if ($Modele -eq 'claude') { 'Claude' } elseif ($Agent) { "Big Pickle (agent $Agent)" } else { 'Big Pickle' }
 
 # --- Prompt ---
 if ($FichierPrompt) {
@@ -45,25 +54,31 @@ if ($FichierPrompt) {
 }
 if (-not $Prompt -or -not $Prompt.Trim()) { throw 'Prompt vide : passer -FichierPrompt ou -Prompt.' }
 
-# --- Session et journal : on reprend ceux de l'appel précédent, sauf -Nouvelle ---
+# --- Session : on reprend celle de l'appel précédent, sauf -Nouvelle ---
 $etat = $null
-if (-not $Nouvelle -and (Test-Path $fichierEtat)) {
-    $etat = [IO.File]::ReadAllText($fichierEtat, $utf8) | ConvertFrom-Json
-    if (-not (Test-Path $etat.journal)) { $etat = $null }
+if (-not $Nouvelle -and (Test-Path $fichierEtat)) { $etat = [IO.File]::ReadAllText($fichierEtat, $utf8) | ConvertFrom-Json }
+if (-not $etat) { $etat = New-Object PSObject -Property @{ session = ''; journal = '' } }
+
+# --- Journal : celui imposé par l'orchestrateur, sinon un fichier par session ---
+if ($Journal) {
+    $fichierJournal = $Journal
 }
-if (-not $etat) {
-    $nomJournal = '{0} - {1} - {2}.md' -f (Get-Date -Format "yyyy-MM-dd HH'h'mm"), $nomModele, $Sujet
-    $etat = New-Object PSObject -Property @{ session = ''; journal = (Join-Path $dossierJournal $nomJournal) }
-    $entete = "---`ntags: [ia, journal]`n---`n# {0}`n`nRetour au [[Journal des sessions]].`n" -f [IO.Path]::GetFileNameWithoutExtension($etat.journal)
-    [IO.File]::WriteAllText($etat.journal, $entete, $utf8)
+else {
+    if ($Nouvelle -or -not $etat.journal -or -not (Test-Path $etat.journal)) {
+        $nomJournal = '{0} - {1} - {2}.md' -f (Get-Date -Format "yyyy-MM-dd HH'h'mm"), $nomModele, $Sujet
+        $etat.journal = Join-Path $dossierJournal $nomJournal
+        $entete = "---`ntags: [ia, journal]`n---`n# {0}`n`nRetour au [[Journal des sessions]].`n" -f [IO.Path]::GetFileNameWithoutExtension($etat.journal)
+        [IO.File]::WriteAllText($etat.journal, $entete, $utf8)
+    }
+    $fichierJournal = $etat.journal
 }
 
 function Ajouter-AuJournal([string]$titre, [string]$texte) {
     $bloc = "`n### {0} · {1}`n`n{2}`n" -f (Get-Date -Format 'HH:mm:ss'), $titre, $texte.TrimEnd()
-    [IO.File]::AppendAllText($etat.journal, $bloc, $utf8)
+    [IO.File]::AppendAllText($fichierJournal, $bloc, $utf8)
 }
 
-Ajouter-AuJournal "Utilisateur → $nomModele (via prompteur, $Mode)" $Prompt
+Ajouter-AuJournal "$Origine → $nomModele ($Mode)" $Prompt
 
 # --- Appel du modèle (le prompt passe par l'entrée standard : pas de problème de guillemets) ---
 Push-Location $racine
@@ -84,6 +99,7 @@ try {
     else {
         $arguments = @('run', '--model', 'opencode/big-pickle', '--format', 'json')
         if ($Mode -eq 'edition') { $arguments += '--auto' }
+        if ($Agent) { $arguments += @('--agent', $Agent) }
         if ($etat.session) { $arguments += @('--session', $etat.session) }
         $lignes = $Prompt | & opencode @arguments
         $morceaux = @()
@@ -112,4 +128,4 @@ Ajouter-AuJournal "$nomModele ($bilan)" $reponse
 # --- Sortie pour le prompteur : la réponse telle quelle, puis le bilan ---
 Write-Output $reponse
 Write-Output ''
-Write-Output "--- relais : $nomModele · $bilan · journal : $($etat.journal.Substring($racine.Length + 1))"
+Write-Output "--- relais : $nomModele · $bilan · journal : $($fichierJournal.Replace($racine + '\', ''))"
