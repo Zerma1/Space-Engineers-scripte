@@ -18,6 +18,12 @@ Commencez par lire les [[Conventions du projet]] : noms de blocs réservés, rô
 | [[Tri Automatique des Inventaires]] | `TriInventaire.cs` | Range les objets dans les coffres selon leur nom `{categorie}[liste]priorite`. |
 | [[Affichage Data Center]] | `AffichageDataCenter.cs` | Stocks, gaz et énergie sur les écrans (`Role=Stocks`). |
 
+## Production & Fabrication
+
+| Note | Fichier | Rôle |
+|---|---|---|
+| [[Production Automatique]] | `ProductionAutomatique.cs` | Garde chaque objet entre un Minimum et un Maximum : file d'attente des assembleurs, raffineries dédiées pour les lingots (`Role=Production`). |
+
 ## Sécurité & alarmes
 
 | Note | Fichier | Rôle |

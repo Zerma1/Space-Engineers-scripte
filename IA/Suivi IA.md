@@ -35,6 +35,7 @@ Voir `.opencode/prompte/initial.md` : analyser les scripts et les `.md` existant
 | `ORCHESTRATOR.md` à la racine : rôles des modèles, appels, règle d'enregistrement ; option `-Agent` de `relais.ps1` pour les agents opencode (testée avec `explainer`) (2026-10-16) | ✅ fait |
 | `ORCHESTRATOR.md` supprimé (sauvegarde : `IA/Prompteur/Sauvegardes/2026-10-16 15h40 - avant suppression ORCHESTRATOR/`) : un fichier par rôle dans `agents/` (`ORCHESTRATEUR.md`, `git.md`) ; `CLAUDE.md` et `AGENTS.md` conservés car chargés automatiquement par Claude Code et opencode, mis à jour pour pointer vers `agents/` (2026-10-16) | ✅ fait |
 | Réorganisation committée en deux commits (« Renomme optimisation_Claude en Scripts et regroupe les fichiers IA dans IA/ » puis « Corrige le lien original du Serveur Dictionnaire »), sans push (2026-10-16) | ✅ fait |
+| 11 - Production Automatique (.cs + .md) : quotas Minimum/Maximum par objet, file d'attente des assembleurs, raffineries dédiées pour les lingots, `Role=Production`. Réécrit par le codeur le 2026-10-27 : la version précédente (pas écrite par le codeur, ne compilait pas en C# 6) est sauvegardée dans `IA/Prompteur/Sauvegardes/2026-10-27 14h45 - avant reecriture production/` | ✅ fait, non testé en jeu ; relecture `reviewer` à faire |
 
 ## Passe de vérification par agents (demandée le 2026-10-13)
 
